@@ -1,0 +1,7 @@
+.DS_Store
+node_modules/
+dist
+storybook-dist
+.parcel-cache
+yarn-error.log
+coverage

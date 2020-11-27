@@ -1,0 +1,50 @@
+{
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "prettier"
+  ],
+  "globals": {
+    "Atomics": "readonly",
+    "SharedArrayBuffer": "readonly"
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": 2018,
+    "project": "./tsconfig.json",
+    "sourceType": "module"
+  },
+  "plugins": ["react", "@typescript-eslint", "prettier"],
+  "rules": {
+    "prettier/prettier": "error",
+    "linebreak-style": ["error", "unix"],
+    "quotes": ["error", "single"],
+    "jsx-quotes": ["error", "prefer-double"],
+    "@typescript-eslint/no-floating-promises": [
+      "error",
+      { "ignoreVoid": true }
+    ],
+    "require-await": ["error"],
+    "no-return-await": ["error"],
+    "@typescript-eslint/prefer-for-of": ["error"],
+    "prefer-const": ["error"],
+    "no-unused-expressions": ["error"],
+    "@typescript-eslint/interface-name-prefix": [
+      "error",
+      { "prefixWithI": "never" }
+    ],
+    "semi": ["error", "never"],
+    "max-len": ["error", { "code": 100 }],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["error"],
+    "react/prop-types": "off"
+  }
+}
