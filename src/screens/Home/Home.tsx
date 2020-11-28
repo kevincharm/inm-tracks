@@ -4,17 +4,36 @@ import { MapConsumer, Marker, TileLayer, useMapEvents, Tooltip, Polyline } from 
 import { StyledMapContainer, StyledPage, StyledPageContainer, StyledToolbar } from './Home.styled'
 import * as geolib from 'geolib'
 import waypoints from './waypoints'
+import runwayEnds, { getRunway } from './rwy-end'
 
 interface HomeProps {}
 
 interface HomeState {
     mode: 'init' | 'draw'
+    currRunway: string
     tracks: Array<[number, number][]>
     currTrack: [number, number][]
 }
 
-const HNL_CENTRE: [number, number] = [21.3245182, -157.9272623]
-const createDefaultPoint = (): [number, number] => [0, 0]
+const HNL_CENTRE: [number, number] = [21.318691, -157.922407] // Elevation: 4.0m
+
+const createDefaultPoint = (runwayEnd: string): [number, number] => {
+    const [, x, y] = getRunway(runwayEnd)!
+    const { latitude: xLat, longitude: xLon } = geolib.computeDestinationPoint(
+        { lat: HNL_CENTRE[0], lon: HNL_CENTRE[1] },
+        Math.abs(x * 1852),
+        x >= 0 ? 90 : 270
+    )
+    const { latitude, longitude } = geolib.computeDestinationPoint(
+        { lat: xLat, lon: xLon },
+        Math.abs(y * 1852),
+        y >= 0 ? 0 : 180
+    )
+    // console.log(runwayEnd, x, y, ' -> ', latitude, longitude)
+    return [latitude, longitude]
+}
+
+const defaultCurrTrack = createDefaultPoint(runwayEnds[0][0])
 
 /**
  * Map event handlers, uses render props to control leaflet map
@@ -25,6 +44,7 @@ const MapEventHandler = (props: {
     setState: React.Dispatch<React.SetStateAction<HomeState>>
 }) => {
     const { state, setState } = props
+
     useMapEvents({
         click: (event) => {
             if (state.mode !== 'draw') {
@@ -33,7 +53,7 @@ const MapEventHandler = (props: {
 
             const { lat, lng } = event.latlng
             // Drop the last element (temporary preview point)
-            const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
+            const currTrack = state.currTrack.slice(0, Math.max(1, state.currTrack.length - 1))
             setState({
                 ...state,
                 currTrack: currTrack.concat([
@@ -52,7 +72,7 @@ const MapEventHandler = (props: {
             setState({
                 ...state,
                 currTrack: state.currTrack.map((point, i, arr) => {
-                    if (i !== arr.length - 1) {
+                    if (i !== arr.length - 1 || i === 0) {
                         return point
                     }
                     return [lat, lng]
@@ -67,14 +87,14 @@ const MapEventHandler = (props: {
                     setState({
                         ...state,
                         tracks: state.tracks.concat([currTrack]),
-                        currTrack: [createDefaultPoint()],
+                        currTrack: [createDefaultPoint(state.currRunway)],
                     })
                     break
                 }
                 case 'Escape': {
                     setState({
                         ...state,
-                        currTrack: [createDefaultPoint()],
+                        currTrack: [createDefaultPoint(state.currRunway)],
                     })
                     break
                 }
@@ -89,8 +109,9 @@ const MapEventHandler = (props: {
 export const Home: React.FunctionComponent<HomeProps> = (props) => {
     const [state, setState] = useState<HomeState>({
         mode: 'init',
+        currRunway: runwayEnds[0][0],
         tracks: [],
-        currTrack: [createDefaultPoint()],
+        currTrack: [defaultCurrTrack],
     })
 
     // I really hate hooks
@@ -151,6 +172,21 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     >
                         Draw (D)
                     </button>
+                    <select
+                        onChange={(event) => {
+                            const runwayId = event.target.value
+                            setState({
+                                ...state,
+                                currRunway: runwayId,
+                            })
+                        }}
+                    >
+                        {runwayEnds.map(([id]) => (
+                            <option key={id} value={id}>
+                                {id}
+                            </option>
+                        ))}
+                    </select>
                 </StyledToolbar>
                 <StyledMapContainer center={HNL_CENTRE} zoom={11}>
                     <MapConsumer>
@@ -158,17 +194,17 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                             useEffect(() => {
                                 if (state.mode === 'init') {
                                     map.dragging.enable()
-                                    map.touchZoom.enable()
+                                    // map.touchZoom.enable()
                                     map.doubleClickZoom.enable()
-                                    map.scrollWheelZoom.enable()
-                                    map.boxZoom.enable()
+                                    // map.scrollWheelZoom.enable()
+                                    // map.boxZoom.enable()
                                     map.keyboard.enable()
                                 } else {
                                     map.dragging.disable()
-                                    map.touchZoom.disable()
+                                    // map.touchZoom.disable()
                                     map.doubleClickZoom.disable()
-                                    map.scrollWheelZoom.disable()
-                                    map.boxZoom.disable()
+                                    // map.scrollWheelZoom.disable()
+                                    // map.boxZoom.disable()
                                     map.keyboard.disable()
                                 }
                             }, [state.mode])
