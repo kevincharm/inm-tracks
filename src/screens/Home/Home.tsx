@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { MapConsumer, Marker, TileLayer, useMapEvents, Tooltip, Polyline } from 'react-leaflet'
 import { StyledMapContainer, StyledPage, StyledPageContainer, StyledToolbar } from './Home.styled'
+import * as geolib from 'geolib'
 import waypoints from './waypoints'
 
 interface HomeProps {}
@@ -36,7 +37,43 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
             },
             keydown: (event) => {
                 if (event.originalEvent.code === 'Enter') {
-                    console.log(`New track:`, state.currTrack)
+                    const bearings = []
+                    for (let i = 1; i < state.currTrack.length; i++) {
+                        const [aLat, aLon] = state.currTrack[i - 1]
+                        const [bLat, bLon] = state.currTrack[i]
+                        const bearing = geolib.getGreatCircleBearing(
+                            { latitude: aLat, longitude: aLon },
+                            { latitude: bLat, longitude: bLon }
+                        )
+                        bearings.push(bearing)
+                    }
+                    console.log(bearings)
+                    // calc bearing diffs
+                    const turns = []
+                    for (let i = 1; i < bearings.length; i++) {
+                        const alpha = bearings[i - 1]
+                        const beta = bearings[i]
+                        let turn: number
+                        let dir: string
+                        if (Math.abs(alpha - beta) < 180) {
+                            turn = Math.abs(beta - alpha) % 180
+                            if (alpha < beta) {
+                                dir = 'R'
+                            } else {
+                                dir = 'L'
+                            }
+                        } else {
+                            turn = Math.abs(alpha - beta) % 180
+                            if (alpha < beta) {
+                                dir = 'L'
+                            } else {
+                                dir = 'R'
+                            }
+                        }
+                        turns.push(`${dir} ${turn}`)
+                    }
+                    console.log(turns)
+
                     setState({
                         ...state,
                         tracks: state.tracks.concat([state.currTrack]),
