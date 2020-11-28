@@ -1,7 +1,8 @@
 import * as React from 'react'
 import { useState, useEffect } from 'react'
-import { MapConsumer, Marker, TileLayer, useMapEvents, Polyline } from 'react-leaflet'
+import { MapConsumer, Marker, TileLayer, useMapEvents, Tooltip, Polyline } from 'react-leaflet'
 import { StyledMapContainer, StyledPage, StyledPageContainer, StyledToolbar } from './Home.styled'
+import waypoints from './waypoints'
 
 interface HomeProps {}
 
@@ -75,7 +76,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         Draw
                     </button>
                 </StyledToolbar>
-                <StyledMapContainer center={HNL_CENTRE} zoom={13}>
+                <StyledMapContainer center={HNL_CENTRE} zoom={11}>
                     <MapConsumer>
                         {(map) => {
                             useEffect(() => {
@@ -106,10 +107,16 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     {state.currTrack && state.currTrack.length > 0 && (
                         <Polyline positions={state.currTrack} color="blue" />
                     )}
-                    {state.tracks.map((track) => {
-                        return <Polyline positions={track} color="red" />
-                    })}
-                    <Marker position={[51.505, -0.09]} />
+                    {state.tracks.map((track, i) => (
+                        <Polyline key={i} positions={track} color="red" />
+                    ))}
+                    {waypoints.map(
+                        ([POINT_ID, POINT_CAT, LATITUDE, LONGITUDE, HEIGHT, DEF_COORD]) => (
+                            <Marker key={POINT_ID} position={[LATITUDE, LONGITUDE]}>
+                                <Tooltip permanent>{POINT_ID}</Tooltip>
+                            </Marker>
+                        )
+                    )}
                 </StyledMapContainer>
             </StyledPage>
         </StyledPageContainer>

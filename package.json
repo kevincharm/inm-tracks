@@ -7,6 +7,7 @@
     "build": "yarn parcel build src/index.html",
     "test": "yarn jest",
     "test:watch": "yarn jest --watch",
+    "copy:assets": "cp -r src/assets dist/assets",
     "check:format": "yarn prettier --check \"src/**/*.ts\"",
     "check:compile": "yarn tsc --noEmit",
     "ci:test": "yarn jest --ci --colors --coverage",
