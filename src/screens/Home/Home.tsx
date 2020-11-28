@@ -14,12 +14,13 @@ interface HomeState {
 }
 
 const HNL_CENTRE: [number, number] = [21.3245182, -157.9272623]
+const createDefaultPoint = (): [number, number] => [0, 0]
 
 export const Home: React.FunctionComponent<HomeProps> = (props) => {
     const [state, setState] = useState<HomeState>({
         mode: 'init',
         tracks: [],
-        currTrack: [],
+        currTrack: [createDefaultPoint()],
     })
 
     const MapEventHandler = () => {
@@ -30,55 +31,53 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                 }
 
                 const { lat, lng } = event.latlng
+                // Drop the last element (temporary preview point)
+                const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
                 setState({
                     ...state,
-                    currTrack: state.currTrack.concat([[lat, lng]]),
+                    currTrack: currTrack.concat([
+                        [lat, lng],
+                        [lat, lng] /** Add another one at the end for where the mouse is */,
+                    ]),
+                })
+            },
+            mousemove: (event) => {
+                const track = state.currTrack
+                if (!track.length || state.mode !== 'draw') {
+                    return
+                }
+
+                const { lat, lng } = event.latlng
+                setState({
+                    ...state,
+                    currTrack: state.currTrack.map((point, i, arr) => {
+                        if (i !== arr.length - 1) {
+                            return point
+                        }
+                        return [lat, lng]
+                    }),
                 })
             },
             keydown: (event) => {
-                if (event.originalEvent.code === 'Enter') {
-                    const bearings = []
-                    for (let i = 1; i < state.currTrack.length; i++) {
-                        const [aLat, aLon] = state.currTrack[i - 1]
-                        const [bLat, bLon] = state.currTrack[i]
-                        const bearing = geolib.getGreatCircleBearing(
-                            { latitude: aLat, longitude: aLon },
-                            { latitude: bLat, longitude: bLon }
-                        )
-                        bearings.push(bearing)
+                switch (event.originalEvent.code) {
+                    case 'Enter': {
+                        // Drop the last element (temporary preview point)
+                        const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
+                        setState({
+                            ...state,
+                            tracks: state.tracks.concat([currTrack]),
+                            currTrack: [createDefaultPoint()],
+                        })
+                        break
                     }
-                    console.log(bearings)
-                    // calc bearing diffs
-                    const turns = []
-                    for (let i = 1; i < bearings.length; i++) {
-                        const alpha = bearings[i - 1]
-                        const beta = bearings[i]
-                        let turn: number
-                        let dir: string
-                        if (Math.abs(alpha - beta) < 180) {
-                            turn = Math.abs(beta - alpha) % 180
-                            if (alpha < beta) {
-                                dir = 'R'
-                            } else {
-                                dir = 'L'
-                            }
-                        } else {
-                            turn = Math.abs(alpha - beta) % 180
-                            if (alpha < beta) {
-                                dir = 'L'
-                            } else {
-                                dir = 'R'
-                            }
-                        }
-                        turns.push(`${dir} ${turn}`)
+                    case 'Escape': {
+                        setState({
+                            ...state,
+                            currTrack: [createDefaultPoint()],
+                        })
+                        break
                     }
-                    console.log(turns)
-
-                    setState({
-                        ...state,
-                        tracks: state.tracks.concat([state.currTrack]),
-                        currTrack: [],
-                    })
+                    default:
                 }
             },
         })
