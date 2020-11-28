@@ -144,9 +144,59 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     {state.currTrack && state.currTrack.length > 0 && (
                         <Polyline positions={state.currTrack} color="blue" />
                     )}
-                    {state.tracks.map((track, i) => (
-                        <Polyline key={i} positions={track} color="red" />
-                    ))}
+                    {state.tracks.map((track, i) => {
+                        const bearings = []
+                        const distances = []
+                        for (let i = 1; i < track.length; i++) {
+                            const [aLat, aLon] = track[i - 1]
+                            const [bLat, bLon] = track[i]
+                            const bearing = geolib.getGreatCircleBearing(
+                                { latitude: aLat, longitude: aLon },
+                                { latitude: bLat, longitude: bLon }
+                            )
+                            bearings.push(bearing)
+                            const dist = geolib.getDistance(
+                                { lat: aLat, lon: aLon },
+                                { lat: bLat, lon: bLon }
+                            )
+                            distances.push(`S ${(dist / 1000).toFixed(2)} km`)
+                        }
+                        // calc bearing diffs
+                        const turns = []
+                        for (let i = 1; i < bearings.length; i++) {
+                            const alpha = bearings[i - 1]
+                            const beta = bearings[i]
+                            let turn: number
+                            let dir: string
+                            if (Math.abs(alpha - beta) < 180) {
+                                turn = Math.abs(beta - alpha) % 180
+                                if (alpha < beta) {
+                                    dir = 'R'
+                                } else {
+                                    dir = 'L'
+                                }
+                            } else {
+                                turn = Math.abs(alpha - beta) % 180
+                                if (alpha < beta) {
+                                    dir = 'L'
+                                } else {
+                                    dir = 'R'
+                                }
+                            }
+                            turns.push(`${dir} ${turn.toFixed(2)}º`)
+                        }
+                        const segments = []
+                        while (distances.length > 0 && turns.length > 0) {
+                            if (distances.length > 0) segments.push(distances.shift())
+                            if (turns.length > 0) segments.push(turns.shift())
+                        }
+
+                        return (
+                            <Polyline key={i} positions={track} color="red">
+                                <Tooltip>{segments.join(',')}</Tooltip>
+                            </Polyline>
+                        )
+                    })}
                     {waypoints.map(
                         ([POINT_ID, POINT_CAT, LATITUDE, LONGITUDE, HEIGHT, DEF_COORD]) => (
                             <Marker key={POINT_ID} position={[LATITUDE, LONGITUDE]}>
