@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { MapConsumer, Marker, TileLayer, useMapEvents, Tooltip, Polyline } from 'react-leaflet'
 import { StyledMapContainer, StyledPage, StyledPageContainer, StyledToolbar } from './Home.styled'
 import * as geolib from 'geolib'
@@ -16,6 +16,76 @@ interface HomeState {
 const HNL_CENTRE: [number, number] = [21.3245182, -157.9272623]
 const createDefaultPoint = (): [number, number] => [0, 0]
 
+/**
+ * Map event handlers, uses render props to control leaflet map
+ * @param props
+ */
+const MapEventHandler = (props: {
+    state: HomeState
+    setState: React.Dispatch<React.SetStateAction<HomeState>>
+}) => {
+    const { state, setState } = props
+    useMapEvents({
+        click: (event) => {
+            if (state.mode !== 'draw') {
+                return
+            }
+
+            const { lat, lng } = event.latlng
+            // Drop the last element (temporary preview point)
+            const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
+            setState({
+                ...state,
+                currTrack: currTrack.concat([
+                    [lat, lng],
+                    [lat, lng] /** Add another one at the end for where the mouse is */,
+                ]),
+            })
+        },
+        mousemove: (event) => {
+            const track = state.currTrack
+            if (!track.length || state.mode !== 'draw') {
+                return
+            }
+
+            const { lat, lng } = event.latlng
+            setState({
+                ...state,
+                currTrack: state.currTrack.map((point, i, arr) => {
+                    if (i !== arr.length - 1) {
+                        return point
+                    }
+                    return [lat, lng]
+                }),
+            })
+        },
+        keydown: (event) => {
+            switch (event.originalEvent.code) {
+                case 'Enter': {
+                    // Drop the last element (temporary preview point)
+                    const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
+                    setState({
+                        ...state,
+                        tracks: state.tracks.concat([currTrack]),
+                        currTrack: [createDefaultPoint()],
+                    })
+                    break
+                }
+                case 'Escape': {
+                    setState({
+                        ...state,
+                        currTrack: [createDefaultPoint()],
+                    })
+                    break
+                }
+                default:
+            }
+        },
+    })
+
+    return null
+}
+
 export const Home: React.FunctionComponent<HomeProps> = (props) => {
     const [state, setState] = useState<HomeState>({
         mode: 'init',
@@ -23,67 +93,37 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         currTrack: [createDefaultPoint()],
     })
 
-    const MapEventHandler = () => {
-        useMapEvents({
-            click: (event) => {
-                if (state.mode !== 'draw') {
-                    return
+    // I really hate hooks
+    const windowKeyDownHandler = useCallback(
+        (event: KeyboardEvent) => {
+            switch (event.code) {
+                case 'KeyS': {
+                    setState({
+                        ...state,
+                        mode: 'init',
+                    })
+                    break
                 }
-
-                const { lat, lng } = event.latlng
-                // Drop the last element (temporary preview point)
-                const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
-                setState({
-                    ...state,
-                    currTrack: currTrack.concat([
-                        [lat, lng],
-                        [lat, lng] /** Add another one at the end for where the mouse is */,
-                    ]),
-                })
-            },
-            mousemove: (event) => {
-                const track = state.currTrack
-                if (!track.length || state.mode !== 'draw') {
-                    return
+                case 'KeyD': {
+                    setState({
+                        ...state,
+                        mode: 'draw',
+                    })
+                    break
                 }
+                default:
+            }
+        },
+        [state]
+    )
 
-                const { lat, lng } = event.latlng
-                setState({
-                    ...state,
-                    currTrack: state.currTrack.map((point, i, arr) => {
-                        if (i !== arr.length - 1) {
-                            return point
-                        }
-                        return [lat, lng]
-                    }),
-                })
-            },
-            keydown: (event) => {
-                switch (event.originalEvent.code) {
-                    case 'Enter': {
-                        // Drop the last element (temporary preview point)
-                        const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
-                        setState({
-                            ...state,
-                            tracks: state.tracks.concat([currTrack]),
-                            currTrack: [createDefaultPoint()],
-                        })
-                        break
-                    }
-                    case 'Escape': {
-                        setState({
-                            ...state,
-                            currTrack: [createDefaultPoint()],
-                        })
-                        break
-                    }
-                    default:
-                }
-            },
-        })
+    useEffect(() => {
+        window.addEventListener('keydown', windowKeyDownHandler)
 
-        return null
-    }
+        return () => {
+            window.removeEventListener('keydown', windowKeyDownHandler)
+        }
+    }, [windowKeyDownHandler])
 
     return (
         <StyledPageContainer>
@@ -98,7 +138,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                             })
                         }
                     >
-                        Select
+                        Select (S)
                     </button>
                     <button
                         disabled={state.mode === 'draw'}
@@ -109,7 +149,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                             })
                         }
                     >
-                        Draw
+                        Draw (D)
                     </button>
                 </StyledToolbar>
                 <StyledMapContainer center={HNL_CENTRE} zoom={11}>
@@ -135,7 +175,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                             return null
                         }}
                     </MapConsumer>
-                    <MapEventHandler />
+                    <MapEventHandler state={state} setState={setState} />
                     <TileLayer
                         attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
