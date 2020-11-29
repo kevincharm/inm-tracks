@@ -85,7 +85,7 @@ const defaultCurrTrack = calcRunwayLatLng(runwayEnds[0][0])
 export const Home: React.FunctionComponent<HomeProps> = (props) => {
     const [state, setState] = useState<HomeState>({
         mode: 'init',
-        tracks: [],
+        tracks: JSON.parse(localStorage.getItem('tracks') || null!) || [],
         selTrackIndex: -1,
         currRunway: runwayEnds[0][0],
         currTrack: [defaultCurrTrack],
@@ -119,6 +119,12 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         },
         [state]
     )
+
+    /// Persist tracks to LocalStorage whenever `state.tracks` is updated
+    useEffect(() => {
+        console.log('Saving tracks...', state.tracks)
+        localStorage.setItem('tracks', JSON.stringify(state.tracks))
+    }, [state.tracks])
 
     useEffect(() => {
         window.addEventListener('keydown', windowKeyDownHandler)
@@ -192,6 +198,24 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                             </option>
                         ))}
                     </select>
+                    <Button
+                        colourscheme="danger"
+                        onClick={() => {
+                            if (
+                                window.confirm(
+                                    'Are you sure you want to delete all locally-stored data?'
+                                )
+                            ) {
+                                localStorage.clear()
+                                setState({
+                                    ...state,
+                                    tracks: [],
+                                })
+                            }
+                        }}
+                    >
+                        Clear Data
+                    </Button>
                 </StyledToolbar>
                 <StyledMapContainer center={HNL_CENTRE} zoom={11}>
                     <MapConsumer>
@@ -355,8 +379,8 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         />
                         <h4>Segments</h4>
                         <ol>
-                            {calcSegments(selectedTrack).map((segment) => (
-                                <li>{segment}</li>
+                            {calcSegments(selectedTrack).map((segment, i) => (
+                                <li key={i}>{segment}</li>
                             ))}
                         </ol>
                     </StyledTrackBox>
