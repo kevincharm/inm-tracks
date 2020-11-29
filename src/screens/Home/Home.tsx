@@ -22,6 +22,7 @@ import { MapEventHandler } from './MapEventHandler'
 import { Toolbar } from '../../components/Toolbar'
 import { openFile } from '../../lib/open-file'
 import { downloadFile } from '../../lib/download-file'
+import { dbfWrite } from '../../lib/dbf'
 
 interface HomeProps {}
 
@@ -43,7 +44,8 @@ export function calcSegments(track: Track) {
         )
         bearings.push(bearing)
         const dist = geolib.getDistance({ lat: aLat, lon: aLon }, { lat: bLat, lon: bLon })
-        distances.push(`S ${(dist / 1000).toFixed(2)} km`)
+        // INM format: SEG_TYPE PARAM1(distance in nm)
+        distances.push(`S ${dist / 1852}`)
     }
     // calc bearing diffs
     const turns = []
@@ -67,7 +69,8 @@ export function calcSegments(track: Track) {
                 dir = 'R'
             }
         }
-        turns.push(`${dir} ${turn.toFixed(2)}º`)
+        // This is INM's trk_segs format: SEG_TYPE PARAM1(bearing) PARAM2(distance in nm)
+        turns.push(`${dir} ${turn} ${5 / 1852}`)
     }
     const segments: string[] = []
     while (distances.length > 0 && turns.length > 0) {
@@ -242,6 +245,54 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                             }}
                         >
                             Export JSON
+                        </Button>
+                        <Button
+                            colourscheme="primary"
+                            onClick={() => {
+                                // Transform tracks into structured DBF
+                                const records = state.tracks
+                                    .map((track) => {
+                                        return calcSegments(track).map((segment, SEG_NUM) => {
+                                            const [SEG_TYPE, _p1, _p2] = segment.split(' ')
+                                            let PARAM1: string | number = _p1
+                                                ? parseFloat(_p1.trim() || '0')
+                                                : 0
+                                            // INM is really fussy and turns must only have 1dp
+                                            // e.g. 65.0
+                                            if (['L', 'R'].includes(SEG_TYPE)) {
+                                                PARAM1 = PARAM1.toFixed(1)
+                                            }
+                                            const PARAM2 = _p2 ? parseFloat(_p2.trim() || '0') : 0
+                                            return [
+                                                track.runwayId,
+                                                'D',
+                                                track.name,
+                                                '0',
+                                                SEG_NUM + 1,
+                                                SEG_TYPE,
+                                                PARAM1,
+                                                PARAM2,
+                                            ]
+                                        })
+                                    })
+                                    .reduce((p, c) => p.concat(c), [])
+                                const buf = dbfWrite(
+                                    [
+                                        { type: 'C', name: 'RWY_ID', length: 8 },
+                                        { type: 'C', name: 'OP_TYPE', length: 1 },
+                                        { type: 'C', name: 'TRK_ID1', length: 8 },
+                                        { type: 'C', name: 'TRK_ID2', length: 1 },
+                                        { type: 'N', name: 'SEG_NUM', length: 3, decimalLength: 0 },
+                                        { type: 'C', name: 'SEG_TYPE', length: 1 },
+                                        { type: 'N', name: 'PARAM1', length: 9, decimalLength: 4 },
+                                        { type: 'N', name: 'PARAM2', length: 9, decimalLength: 4 },
+                                    ],
+                                    records
+                                )
+                                downloadFile(`trk_segs.dbf`, buf, 'application/json')
+                            }}
+                        >
+                            Export DBF
                         </Button>
                         <Button
                             colourscheme="danger"
