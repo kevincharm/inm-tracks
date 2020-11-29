@@ -483,14 +483,14 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                     return group
                                 }, {})
                             ).map(([runwayId, trackNames]) => (
-                                <p>
+                                <div>
                                     <h4>{runwayId}</h4>
                                     <ul>
                                         {trackNames.map((name, i) => (
                                             <li key={i}>{name}</li>
                                         ))}
                                     </ul>
-                                </p>
+                                </div>
                             ))}
                         </StyledTrackBox>
                     </Toolbar>
