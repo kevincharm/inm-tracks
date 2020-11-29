@@ -49,7 +49,7 @@ export function calcSegments(track: Track) {
         turns.push(`${dir} ${turn.toFixed(1)} ${(5000 / 1852).toFixed(4)}`)
     }
     const segments: string[] = []
-    while (distances.length > 0 && turns.length > 0) {
+    while (distances.length > 0 || turns.length > 0) {
         if (distances.length > 0) segments.push(distances.shift()!)
         if (turns.length > 0) segments.push(turns.shift()!)
     }
