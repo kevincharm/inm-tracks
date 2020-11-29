@@ -1,7 +1,8 @@
 import * as React from 'react'
+import * as geolib from 'geolib'
 import { useMapEvents } from 'react-leaflet'
 import { calcRunwayLatLng } from './calc-runway-lat-lng'
-import { HomeState } from './Home'
+import { HomeState, Track } from './Home'
 
 /**
  * Map event handlers, uses render props to control leaflet map
@@ -15,15 +16,42 @@ export const MapEventHandler = (props: {
 
     const finaliseCurrentTrack = () => {
         const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
+        const track: Track = {
+            runwayId: state.currRunway,
+            name: 'UNTITLED',
+            points: currTrack,
+        }
+
+        // Infer the track name lol
+        if (currTrack.length >= 2) {
+            const [aLat, aLon] = currTrack[currTrack.length - 2]
+            const [bLat, bLon] = currTrack[currTrack.length - 1]
+            const bearing = geolib.getGreatCircleBearing(
+                { lat: aLat, lon: aLon },
+                { lat: bLat, lon: bLon }
+            )
+            if (bearing >= 337.5 || (bearing >= 0 && bearing < 22.5)) {
+                track.name = 'N'
+            } else if (bearing >= 22.5 && bearing < 67.5) {
+                track.name = 'NE'
+            } else if (bearing >= 67.5 && bearing < 112.5) {
+                track.name = 'E'
+            } else if (bearing >= 112.5 && bearing < 157.5) {
+                track.name = 'SE'
+            } else if (bearing >= 157.5 && bearing < 202.5) {
+                track.name = 'S'
+            } else if (bearing >= 202.5 && bearing < 247.5) {
+                track.name = 'SW'
+            } else if (bearing >= 247.5 && bearing < 292.5) {
+                track.name = 'W'
+            } else {
+                track.name = 'NW'
+            }
+        }
+
         setState({
             ...state,
-            tracks: state.tracks.concat([
-                {
-                    runwayId: state.currRunway,
-                    name: 'UNTITLED',
-                    points: currTrack,
-                },
-            ]),
+            tracks: state.tracks.concat([track]),
             selTrackIndex: state.tracks.length, // last index after insertion above
             currTrack: [calcRunwayLatLng(state.currRunway)],
         })
