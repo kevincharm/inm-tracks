@@ -56,6 +56,7 @@ export interface HomeState {
     selTrackIndex: number
     currRunway: string
     currTrack: [number, number][]
+    showSummary: boolean
 }
 
 export const HNL_CENTRE: [number, number] = [21.318691, -157.922407] // Elevation: 4.0m
@@ -69,6 +70,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         selTrackIndex: -1,
         currRunway: runwayEnds[0][0],
         currTrack: [defaultCurrTrack],
+        showSummary: JSON.parse(localStorage.getItem('showSummary') || null!) || true,
     })
 
     const selectedTrack =
@@ -160,7 +162,8 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
     useEffect(() => {
         console.log('Saving tracks...', state.tracks)
         localStorage.setItem('tracks', JSON.stringify(state.tracks))
-    }, [state.tracks])
+        localStorage.setItem('showSummary', JSON.stringify(state.showSummary))
+    }, [state.tracks, state.showSummary])
 
     useEffect(() => {
         window.addEventListener('keydown', windowKeyDownHandler)
@@ -240,6 +243,17 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         <Button
                             colourscheme="primary"
                             onClick={() => {
+                                setState({
+                                    ...state,
+                                    showSummary: !state.showSummary,
+                                })
+                            }}
+                        >
+                            Summary
+                        </Button>
+                        <Button
+                            colourscheme="primary"
+                            onClick={() => {
                                 if (!window.confirm(`Importing will overwrite tracks. Continue?`)) {
                                     return
                                 }
@@ -271,7 +285,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         >
                             Export JSON
                         </Button>
-                        <Button colourscheme="primary" onClick={exportDbf}>
+                        <Button colourscheme="confirm" onClick={exportDbf}>
                             Export DBF
                         </Button>
                         <Button
@@ -453,6 +467,31 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                     <li key={i}>{segment}</li>
                                 ))}
                             </ol>
+                        </StyledTrackBox>
+                    </Toolbar>
+                )}
+                {state.showSummary && (
+                    <Toolbar id="summary" title="Summary" stackDirection="vertical">
+                        <StyledTrackBox>
+                            {Object.entries(
+                                state.tracks.reduce((group: { [key: string]: string[] }, track) => {
+                                    if (!group[track.runwayId]) {
+                                        group[track.runwayId] = []
+                                    }
+                                    group[track.runwayId].push(track.name)
+                                    group[track.runwayId].sort()
+                                    return group
+                                }, {})
+                            ).map(([runwayId, trackNames]) => (
+                                <p>
+                                    <h4>{runwayId}</h4>
+                                    <ul>
+                                        {trackNames.map((name, i) => (
+                                            <li key={i}>{name}</li>
+                                        ))}
+                                    </ul>
+                                </p>
+                            ))}
                         </StyledTrackBox>
                     </Toolbar>
                 )}

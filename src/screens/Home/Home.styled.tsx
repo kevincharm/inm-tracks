@@ -45,6 +45,14 @@ export const StyledToolbarRight = styled('div')({
 export const StyledTrackBox = styled('div')((props) => ({
     padding: props.theme.metrics.margins.md,
     backgroundColor: 'white',
+
+    '*:first-child': {
+        margin: 0,
+    },
+
+    ul: {
+        paddingLeft: props.theme.metrics.margins.sm,
+    },
 }))
 
 export const StyledHint = styled('div')((props) => ({

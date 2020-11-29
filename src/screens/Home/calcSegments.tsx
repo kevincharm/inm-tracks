@@ -44,7 +44,7 @@ export function calcSegments(track: Track) {
             }
         }
         // This is INM's trk_segs format: SEG_TYPE PARAM1(bearing) PARAM2(distance in nm)
-        turns.push(`${dir} ${turn} ${5000 / 1852}`)
+        turns.push(`${dir} ${turn.toFixed(1)} ${(5000 / 1852).toFixed(4)}`)
     }
     const segments: string[] = []
     while (distances.length > 0 && turns.length > 0) {
