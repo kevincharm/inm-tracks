@@ -26,7 +26,7 @@ import { Toolbar } from '../../components/Toolbar'
 import { openFile } from '../../lib/open-file'
 import { downloadFile } from '../../lib/download-file'
 import { dbfWrite } from '../../lib/dbf'
-import { calcSegments } from './calcSegments'
+import { calcSegments } from './calc-segments'
 // @ts-ignore
 import flyoverIcon from '../../flyover.png'
 // @ts-ignore
