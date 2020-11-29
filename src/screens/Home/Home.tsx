@@ -15,6 +15,7 @@ import {
     StyledToolbarRight,
     StyledTrackBox,
 } from './Home.styled'
+import * as L from 'leaflet'
 import { Button } from '../../components/Button'
 import * as geolib from 'geolib'
 import waypoints from './waypoints'
@@ -25,6 +26,21 @@ import { Toolbar } from '../../components/Toolbar'
 import { openFile } from '../../lib/open-file'
 import { downloadFile } from '../../lib/download-file'
 import { dbfWrite } from '../../lib/dbf'
+import { calcSegments } from './calcSegments'
+// @ts-ignore
+import flyoverIcon from '../../flyover.png'
+// @ts-ignore
+import vortacIcon from '../../vortac.png'
+
+const flyoverMarkerIcon = new L.Icon({
+    iconUrl: flyoverIcon,
+    iconSize: [15, 15],
+})
+
+const vortacMarkerIcon = new L.Icon({
+    iconUrl: vortacIcon,
+    iconSize: [25, 22],
+})
 
 interface HomeProps {}
 
@@ -32,60 +48,6 @@ export interface Track {
     runwayId: string
     name: string
     points: [number, number][]
-}
-
-export function calcSegments(track: Track) {
-    const bearings = []
-    const distances = []
-    for (let i = 1; i < track.points.length; i++) {
-        const [aLat, aLon] = track.points[i - 1]
-        const [bLat, bLon] = track.points[i]
-        const bearing = geolib.getGreatCircleBearing(
-            { latitude: aLat, longitude: aLon },
-            { latitude: bLat, longitude: bLon }
-        )
-        bearings.push(bearing)
-        const dist = geolib.getDistance({ lat: aLat, lon: aLon }, { lat: bLat, lon: bLon })
-        // INM format: SEG_TYPE PARAM1(distance in km?!)
-        distances.push(`S ${dist / 1000}`)
-    }
-    // calc bearing diffs
-    const turns = []
-    for (let i = 0; i < bearings.length; i++) {
-        const alpha = i > 0 ? bearings[i - 1] : Number(track.runwayId.slice(0, 2)) * 10
-        const beta = bearings[i]
-        if (Math.abs(alpha - beta) < 1) {
-            // Negligible turn, probably the first segment
-            continue
-        }
-
-        let turn: number
-        let dir: string
-        if (Math.abs(alpha - beta) < 180) {
-            turn = Math.abs(beta - alpha) % 180
-            if (alpha < beta) {
-                dir = 'R'
-            } else {
-                dir = 'L'
-            }
-        } else {
-            turn = Math.abs(alpha - beta) % 180
-            if (alpha < beta) {
-                dir = 'L'
-            } else {
-                dir = 'R'
-            }
-        }
-        // This is INM's trk_segs format: SEG_TYPE PARAM1(bearing) PARAM2(distance in nm)
-        turns.push(`${dir} ${turn} ${5000 / 1852}`)
-    }
-    const segments: string[] = []
-    while (distances.length > 0 && turns.length > 0) {
-        if (turns.length > 0) segments.push(turns.shift()!)
-        if (distances.length > 0) segments.push(distances.shift()!)
-    }
-
-    return segments
 }
 
 export interface HomeState {
@@ -150,6 +112,49 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         },
         [state]
     )
+
+    /// The magic sauce: export to DBF for INM
+    const exportDbf = () => {
+        // Transform tracks into structured DBF
+        const records = state.tracks
+            .map((track) => {
+                return calcSegments(track).map((segment, SEG_NUM) => {
+                    const [SEG_TYPE, _p1, _p2] = segment.split(' ')
+                    let PARAM1: string | number = _p1 ? parseFloat(_p1.trim() || '0') : 0
+                    // INM is really fussy and turns must only have 1dp
+                    // e.g. 65.0
+                    if (['L', 'R'].includes(SEG_TYPE)) {
+                        PARAM1 = PARAM1.toFixed(1)
+                    }
+                    const PARAM2 = _p2 ? parseFloat(_p2.trim() || '0') : 0
+                    return [
+                        track.runwayId,
+                        'D',
+                        track.name,
+                        '0',
+                        SEG_NUM + 1,
+                        SEG_TYPE,
+                        PARAM1,
+                        PARAM2,
+                    ]
+                })
+            })
+            .reduce((p, c) => p.concat(c), [])
+        const buf = dbfWrite(
+            [
+                { type: 'C', name: 'RWY_ID', length: 8 },
+                { type: 'C', name: 'OP_TYPE', length: 1 },
+                { type: 'C', name: 'TRK_ID1', length: 8 },
+                { type: 'C', name: 'TRK_ID2', length: 1 },
+                { type: 'N', name: 'SEG_NUM', length: 3, decimalLength: 0 },
+                { type: 'C', name: 'SEG_TYPE', length: 1 },
+                { type: 'N', name: 'PARAM1', length: 9, decimalLength: 4 },
+                { type: 'N', name: 'PARAM2', length: 9, decimalLength: 4 },
+            ],
+            records
+        )
+        downloadFile(`trk_segs.dbf`, buf, 'application/json')
+    }
 
     /// Persist tracks to LocalStorage whenever `state.tracks` is updated
     useEffect(() => {
@@ -266,52 +271,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         >
                             Export JSON
                         </Button>
-                        <Button
-                            colourscheme="primary"
-                            onClick={() => {
-                                // Transform tracks into structured DBF
-                                const records = state.tracks
-                                    .map((track) => {
-                                        return calcSegments(track).map((segment, SEG_NUM) => {
-                                            const [SEG_TYPE, _p1, _p2] = segment.split(' ')
-                                            let PARAM1: string | number = _p1
-                                                ? parseFloat(_p1.trim() || '0')
-                                                : 0
-                                            // INM is really fussy and turns must only have 1dp
-                                            // e.g. 65.0
-                                            if (['L', 'R'].includes(SEG_TYPE)) {
-                                                PARAM1 = PARAM1.toFixed(1)
-                                            }
-                                            const PARAM2 = _p2 ? parseFloat(_p2.trim() || '0') : 0
-                                            return [
-                                                track.runwayId,
-                                                'D',
-                                                track.name,
-                                                '0',
-                                                SEG_NUM + 1,
-                                                SEG_TYPE,
-                                                PARAM1,
-                                                PARAM2,
-                                            ]
-                                        })
-                                    })
-                                    .reduce((p, c) => p.concat(c), [])
-                                const buf = dbfWrite(
-                                    [
-                                        { type: 'C', name: 'RWY_ID', length: 8 },
-                                        { type: 'C', name: 'OP_TYPE', length: 1 },
-                                        { type: 'C', name: 'TRK_ID1', length: 8 },
-                                        { type: 'C', name: 'TRK_ID2', length: 1 },
-                                        { type: 'N', name: 'SEG_NUM', length: 3, decimalLength: 0 },
-                                        { type: 'C', name: 'SEG_TYPE', length: 1 },
-                                        { type: 'N', name: 'PARAM1', length: 9, decimalLength: 4 },
-                                        { type: 'N', name: 'PARAM2', length: 9, decimalLength: 4 },
-                                    ],
-                                    records
-                                )
-                                downloadFile(`trk_segs.dbf`, buf, 'application/json')
-                            }}
-                        >
+                        <Button colourscheme="primary" onClick={exportDbf}>
                             Export DBF
                         </Button>
                         <Button
@@ -364,8 +324,12 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     />
                     {waypoints.map(
                         ([POINT_ID, POINT_CAT, LATITUDE, LONGITUDE, HEIGHT, DEF_COORD]) => (
-                            <Marker key={POINT_ID} position={[LATITUDE, LONGITUDE]}>
-                                <Tooltip permanent>{POINT_ID}</Tooltip>
+                            <Marker
+                                icon={POINT_CAT === 'V' ? vortacMarkerIcon : flyoverMarkerIcon}
+                                key={POINT_ID}
+                                position={[LATITUDE, LONGITUDE]}
+                            >
+                                <Tooltip>{POINT_ID}</Tooltip>
                             </Marker>
                         )
                     )}
