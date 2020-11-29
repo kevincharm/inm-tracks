@@ -1,5 +1,7 @@
 import * as React from 'react'
 import { useState, useEffect, useCallback } from 'react'
+// @ts-ignore
+import * as dbf from 'dbf'
 import { format } from 'date-fns'
 import { MapConsumer, Marker, TileLayer, Tooltip, Polyline } from 'react-leaflet'
 import {
@@ -18,6 +20,8 @@ import runwayEnds from './rwy-end'
 import { calcRunwayLatLng } from './calc-runway-lat-lng'
 import { MapEventHandler } from './MapEventHandler'
 import { Toolbar } from '../../components/Toolbar'
+import { openFile } from '../../lib/open-file'
+import { downloadFile } from '../../lib/download-file'
 
 interface HomeProps {}
 
@@ -212,56 +216,17 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                     return
                                 }
 
-                                /// Whole lotta balony to load a file
-                                // https://stackoverflow.com/questions/3582671/how-to-open-a-local-disk-file-with-javascript
-                                const readFile = function (e: any) {
-                                    var file = e.target.files[0]
-                                    if (!file) {
-                                        return
+                                openFile((contents) => {
+                                    try {
+                                        const tracks = JSON.parse(contents)
+                                        setState({
+                                            ...state,
+                                            tracks,
+                                        })
+                                    } catch (err) {
+                                        window.alert(`Error parsing JSON!`)
                                     }
-                                    var reader = new FileReader()
-                                    reader.onload = function (e: any) {
-                                        var contents = e.target.result
-                                        /// !!! Where the file is actually loaded !!!
-                                        try {
-                                            const tracks = JSON.parse(contents)
-                                            setState({
-                                                ...state,
-                                                tracks,
-                                            })
-                                        } catch (err) {
-                                            window.alert(`Error parsing JSON!`)
-                                        }
-                                        document.body.removeChild(fileInput)
-                                    }
-                                    reader.readAsText(file)
-                                }
-                                const fileInput = document.createElement(
-                                    'input'
-                                ) as HTMLInputElement
-                                fileInput.type = 'file'
-                                fileInput.style.display = 'none'
-                                fileInput.onchange = readFile
-                                document.body.appendChild(fileInput)
-                                var eventMouse = document.createEvent('MouseEvents')
-                                eventMouse.initMouseEvent(
-                                    'click',
-                                    true,
-                                    false,
-                                    window,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    false,
-                                    false,
-                                    false,
-                                    false,
-                                    0,
-                                    null
-                                )
-                                fileInput.dispatchEvent(eventMouse)
+                                })
                             }}
                         >
                             Import JSON
@@ -269,16 +234,11 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         <Button
                             colourscheme="primary"
                             onClick={() => {
-                                const blob = new Blob([JSON.stringify(state.tracks)], {
-                                    type: 'application/json',
-                                })
-                                const a = document.createElement('a')
-                                a.href = URL.createObjectURL(blob)
-                                a.download = `inm_tracks_${format(
-                                    new Date(),
-                                    'yyyy-MM-dd-HH-mm-ss'
-                                )}.json`
-                                a.click()
+                                downloadFile(
+                                    `inm_tracks_${format(new Date(), 'yyyy-MM-dd-HH-mm-ss')}.json`,
+                                    JSON.stringify(state.tracks),
+                                    'application/json'
+                                )
                             }}
                         >
                             Export JSON

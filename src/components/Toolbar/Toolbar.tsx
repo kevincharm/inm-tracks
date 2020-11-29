@@ -91,15 +91,14 @@ export const Toolbar: React.FunctionComponent<ToolbarProps> = (props) => {
         const container = containerRef.current
         if (container) {
             try {
-                const settings = JSON.parse(localStorage.getItem(lsKey) || null!)
+                const settings = JSON.parse(localStorage.getItem(lsKey) || null!) || {}
                 const container = containerRef.current
-                if (!settings || !settings.x || !settings.y || !container) {
+                if (!container) {
                     return
                 }
-                container.style.top = settings.y + 'px'
-                container.style.left = settings.x + 'px'
+                container.style.top = (settings.y || props.defaultY || 100) + 'px'
+                container.style.left = (settings.x || props.defaultX || 10) + 'px'
             } catch (err) {
-                // do nothing
                 container.style.top = `${
                     typeof props.defaultY === 'number' ? props.defaultY : 100
                 }px`
