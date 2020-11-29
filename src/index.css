@@ -12,6 +12,7 @@ body {
     font-weight: 300;
     font-size: 14px;
     min-height: 100vh;
+    background-image: url("pipes.png");
 }
 
 #app {

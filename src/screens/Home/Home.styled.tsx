@@ -7,10 +7,10 @@ export const StyledPageContainer = styled('div')({
 })
 
 export const StyledPage = styled('div')((props) => ({
-    margin: props.theme.metrics.margins.lg,
+    margin: props.theme.metrics.margins.sm,
     fontSize: 14,
     width: '100%',
-    height: `calc(100vh - ${props.theme.metrics.margins.lg * 2}px)`,
+    height: `calc(100vh - 60px - ${props.theme.metrics.margins.sm * 2}px)`,
 }))
 
 export const StyledMapContainer = styled(MapContainer)({
@@ -21,6 +21,10 @@ export const StyledMapContainer = styled(MapContainer)({
 
 export const StyledToolbar = styled('div')({
     display: 'flex',
+    height: 60,
+    '> *': {
+        minWidth: 100,
+    },
 })
 
 export const StyledTrackBox = styled('div')((props) => ({
