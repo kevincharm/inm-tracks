@@ -1437,22 +1437,6 @@
     lodash "^4.17.19"
     to-fast-properties "^2.0.0"
 
-"@babylonjs/core@4.2.0-beta.1", "@babylonjs/core@^4.2.0-beta.1":
-  version "4.2.0-beta.1"
-  resolved "https://registry.yarnpkg.com/@babylonjs/core/-/core-4.2.0-beta.1.tgz#4caf2c3b6f06544e262919ea12b12b4bad5346f7"
-  integrity sha512-+obrGFrLriMttGcinqDTSZDyPFU4slZaGxO0zISdAItnhNxS6d+P0k7OvUQySJgvHoThI3e0J3h8BFO6hpKYcg==
-  dependencies:
-    tslib ">=1.10.0"
-
-"@babylonjs/loaders@^4.2.0-beta.1":
-  version "4.2.0-beta.1"
-  resolved "https://registry.yarnpkg.com/@babylonjs/loaders/-/loaders-4.2.0-beta.1.tgz#942e5dbc2df43860339d827a95fddf8ea23e5a24"
-  integrity sha512-AKmRpLSewet27eijaZ2W567pPc8qMYIqhcwI4u+XLtDtb3bfWhzLgVDpNZDBWW1VL52ZmINPIg+AtG0cZ/+XVQ==
-  dependencies:
-    "@babylonjs/core" "4.2.0-beta.1"
-    babylonjs-gltf2interface "4.2.0-beta.1"
-    tslib ">=1.10.0"
-
 "@base2/pretty-print-object@1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@base2/pretty-print-object/-/pretty-print-object-1.0.0.tgz#860ce718b0b73f4009e153541faff2cb6b85d047"
@@ -5114,11 +5098,6 @@ babel-preset-react-app@^9.1.2:
     "@babel/runtime" "7.9.0"
     babel-plugin-macros "2.8.0"
     babel-plugin-transform-react-remove-prop-types "0.4.24"
-
-babylonjs-gltf2interface@4.2.0-beta.1:
-  version "4.2.0-beta.1"
-  resolved "https://registry.yarnpkg.com/babylonjs-gltf2interface/-/babylonjs-gltf2interface-4.2.0-beta.1.tgz#144857167ac907e9237a159f2ffc2563a4c06ba5"
-  integrity sha512-7aN5ToP377lBhbfsIJNsLXI3+l6GvUjjE9/wWIzBrWcXZh68JiwSTsxZWX5cZChugMf2rxIUNXCF3BYH5tOixA==
 
 bail@^1.0.0:
   version "1.0.5"
@@ -14035,14 +14014,14 @@ ts-pnp@^1.1.6:
   resolved "https://registry.yarnpkg.com/ts-pnp/-/ts-pnp-1.2.0.tgz#a500ad084b0798f1c3071af391e65912c86bca92"
   integrity sha512-csd+vJOb/gkzvcCHgTGSChYpy5f1/XKNsmvBGO4JXS+z1v2HobugDz4s1IeFXM3wZB44uczs+eazB5Q/ccdhQw==
 
-tslib@>=1.10.0, tslib@^2.0.0:
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.0.1.tgz#410eb0d113e5b6356490eec749603725b021b43e"
-  integrity sha512-SgIkNheinmEBgx1IUNirK0TUD4X9yjjBRTqqjggWCU3pUEqIk3/Uwl3yRixYKT6WjQuGiwDv4NomL3wqRCj+CQ==
-
 tslib@^1.10.0, tslib@^1.9.0:
   version "1.13.0"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.13.0.tgz#c881e13cc7015894ed914862d276436fa9a47043"
+
+tslib@^2.0.0:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.0.1.tgz#410eb0d113e5b6356490eec749603725b021b43e"
+  integrity sha512-SgIkNheinmEBgx1IUNirK0TUD4X9yjjBRTqqjggWCU3pUEqIk3/Uwl3yRixYKT6WjQuGiwDv4NomL3wqRCj+CQ==
 
 tty-browserify@0.0.0:
   version "0.0.0"
