@@ -44,14 +44,19 @@ export function calcSegments(track: Track) {
         )
         bearings.push(bearing)
         const dist = geolib.getDistance({ lat: aLat, lon: aLon }, { lat: bLat, lon: bLon })
-        // INM format: SEG_TYPE PARAM1(distance in nm)
-        distances.push(`S ${dist / 1852}`)
+        // INM format: SEG_TYPE PARAM1(distance in km?!)
+        distances.push(`S ${dist / 1000}`)
     }
     // calc bearing diffs
     const turns = []
-    for (let i = 1; i < bearings.length; i++) {
-        const alpha = bearings[i - 1]
+    for (let i = 0; i < bearings.length; i++) {
+        const alpha = i > 0 ? bearings[i - 1] : Number(track.runwayId.slice(0, 2)) * 10
         const beta = bearings[i]
+        if (Math.abs(alpha - beta) < 1) {
+            // Negligible turn, probably the first segment
+            continue
+        }
+
         let turn: number
         let dir: string
         if (Math.abs(alpha - beta) < 180) {
@@ -70,12 +75,12 @@ export function calcSegments(track: Track) {
             }
         }
         // This is INM's trk_segs format: SEG_TYPE PARAM1(bearing) PARAM2(distance in nm)
-        turns.push(`${dir} ${turn} ${5 / 1852}`)
+        turns.push(`${dir} ${turn} ${5000 / 1852}`)
     }
     const segments: string[] = []
     while (distances.length > 0 && turns.length > 0) {
-        if (distances.length > 0) segments.push(distances.shift()!)
         if (turns.length > 0) segments.push(turns.shift()!)
+        if (distances.length > 0) segments.push(distances.shift()!)
     }
 
     return segments
@@ -107,6 +112,16 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
             ? state.tracks[state.selTrackIndex]
             : null
 
+    const deleteSelectedTrack = () => {
+        if (selectedTrack && window.confirm('Are you sure you want to delete this track?')) {
+            setState({
+                ...state,
+                tracks: state.tracks.filter((_, i) => i !== state.selTrackIndex),
+                selTrackIndex: -1,
+            })
+        }
+    }
+
     // I really hate hooks
     const windowKeyDownHandler = useCallback(
         (event: KeyboardEvent) => {
@@ -124,6 +139,9 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         mode: 'draw',
                     })
                     break
+                }
+                case 'KeyX': {
+                    deleteSelectedTrack()
                 }
                 default:
             }
@@ -404,25 +422,8 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                 {selectedTrack && (
                     <Toolbar id="sel_track" title="Selected Track" stackDirection="vertical">
                         <StyledTrackBox>
-                            <Button
-                                colourscheme="danger"
-                                onClick={() => {
-                                    if (
-                                        window.confirm(
-                                            'Are you sure you want to delete this track?'
-                                        )
-                                    ) {
-                                        setState({
-                                            ...state,
-                                            tracks: state.tracks.filter(
-                                                (track, i) => i !== state.selTrackIndex
-                                            ),
-                                            selTrackIndex: -1,
-                                        })
-                                    }
-                                }}
-                            >
-                                Delete
+                            <Button colourscheme="danger" onClick={deleteSelectedTrack}>
+                                Delete (X)
                             </Button>
                             <h4>Runway</h4>
                             <select
