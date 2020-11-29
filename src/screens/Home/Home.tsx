@@ -17,9 +17,62 @@ import { MapEventHandler } from './MapEventHandler'
 
 interface HomeProps {}
 
+export interface Track {
+    runwayId: string
+    name: string
+    points: [number, number][]
+}
+
+export function calcSegments(track: Track) {
+    const bearings = []
+    const distances = []
+    for (let i = 1; i < track.points.length; i++) {
+        const [aLat, aLon] = track.points[i - 1]
+        const [bLat, bLon] = track.points[i]
+        const bearing = geolib.getGreatCircleBearing(
+            { latitude: aLat, longitude: aLon },
+            { latitude: bLat, longitude: bLon }
+        )
+        bearings.push(bearing)
+        const dist = geolib.getDistance({ lat: aLat, lon: aLon }, { lat: bLat, lon: bLon })
+        distances.push(`S ${(dist / 1000).toFixed(2)} km`)
+    }
+    // calc bearing diffs
+    const turns = []
+    for (let i = 1; i < bearings.length; i++) {
+        const alpha = bearings[i - 1]
+        const beta = bearings[i]
+        let turn: number
+        let dir: string
+        if (Math.abs(alpha - beta) < 180) {
+            turn = Math.abs(beta - alpha) % 180
+            if (alpha < beta) {
+                dir = 'R'
+            } else {
+                dir = 'L'
+            }
+        } else {
+            turn = Math.abs(alpha - beta) % 180
+            if (alpha < beta) {
+                dir = 'L'
+            } else {
+                dir = 'R'
+            }
+        }
+        turns.push(`${dir} ${turn.toFixed(2)}º`)
+    }
+    const segments: string[] = []
+    while (distances.length > 0 && turns.length > 0) {
+        if (distances.length > 0) segments.push(distances.shift()!)
+        if (turns.length > 0) segments.push(turns.shift()!)
+    }
+
+    return segments
+}
+
 export interface HomeState {
     mode: 'init' | 'draw'
-    tracks: Array<[number, number][]>
+    tracks: Track[]
     selTrackIndex: number
     currRunway: string
     currTrack: [number, number][]
@@ -37,6 +90,11 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         currRunway: runwayEnds[0][0],
         currTrack: [defaultCurrTrack],
     })
+
+    const selectedTrack =
+        state.selTrackIndex >= 0 && state.selTrackIndex < state.tracks.length
+            ? state.tracks[state.selTrackIndex]
+            : null
 
     // I really hate hooks
     const windowKeyDownHandler = useCallback(
@@ -198,54 +256,22 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         )
                     })}
                     {state.tracks.map((track, i) => {
-                        const bearings = []
-                        const distances = []
-                        for (let i = 1; i < track.length; i++) {
-                            const [aLat, aLon] = track[i - 1]
-                            const [bLat, bLon] = track[i]
-                            const bearing = geolib.getGreatCircleBearing(
-                                { latitude: aLat, longitude: aLon },
-                                { latitude: bLat, longitude: bLon }
-                            )
-                            bearings.push(bearing)
-                            const dist = geolib.getDistance(
-                                { lat: aLat, lon: aLon },
-                                { lat: bLat, lon: bLon }
-                            )
-                            distances.push(`S ${(dist / 1000).toFixed(2)} km`)
-                        }
-                        // calc bearing diffs
-                        const turns = []
-                        for (let i = 1; i < bearings.length; i++) {
-                            const alpha = bearings[i - 1]
-                            const beta = bearings[i]
-                            let turn: number
-                            let dir: string
-                            if (Math.abs(alpha - beta) < 180) {
-                                turn = Math.abs(beta - alpha) % 180
-                                if (alpha < beta) {
-                                    dir = 'R'
-                                } else {
-                                    dir = 'L'
-                                }
-                            } else {
-                                turn = Math.abs(alpha - beta) % 180
-                                if (alpha < beta) {
-                                    dir = 'L'
-                                } else {
-                                    dir = 'R'
-                                }
-                            }
-                            turns.push(`${dir} ${turn.toFixed(2)}º`)
-                        }
-                        const segments = []
-                        while (distances.length > 0 && turns.length > 0) {
-                            if (distances.length > 0) segments.push(distances.shift())
-                            if (turns.length > 0) segments.push(turns.shift())
-                        }
+                        const segments = calcSegments(track)
 
                         return (
-                            <Polyline key={i} positions={track} color="red">
+                            <Polyline
+                                key={i}
+                                positions={track.points}
+                                color="red"
+                                eventHandlers={{
+                                    click: (event) => {
+                                        setState({
+                                            ...state,
+                                            selTrackIndex: i,
+                                        })
+                                    },
+                                }}
+                            >
                                 <Tooltip>{segments.join(',')}</Tooltip>
                             </Polyline>
                         )
@@ -254,14 +280,87 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         <Polyline positions={state.currTrack} color="blue" />
                     )}
                 </StyledMapContainer>
-                <StyledTrackBox>
-                    <div>Runway</div>
-                    <div>{state.currRunway /** TODO: should show selected runway */}</div>
-                    <label>
-                        <div>Track Designation</div>
-                        <input type="text" />
-                    </label>
-                </StyledTrackBox>
+                {selectedTrack && (
+                    <StyledTrackBox>
+                        <Button
+                            colourscheme="danger"
+                            onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this track?')) {
+                                    setState({
+                                        ...state,
+                                        tracks: state.tracks.filter(
+                                            (track, i) => i !== state.selTrackIndex
+                                        ),
+                                        selTrackIndex: -1,
+                                    })
+                                }
+                            }}
+                        >
+                            Delete
+                        </Button>
+                        <h4>Runway</h4>
+                        <select
+                            onChange={(event) => {
+                                // !! Change the runway ID and lat,lng end for this track !!
+                                const runwayId = event.target.value
+                                setState({
+                                    ...state,
+                                    tracks: state.tracks.map((track, i) => {
+                                        if (i !== state.selTrackIndex) {
+                                            return track
+                                        }
+
+                                        return {
+                                            ...track,
+                                            runwayId,
+                                            // !! Runway end must be updated !!
+                                            points: track.points.map((point, j) => {
+                                                if (j !== 0) {
+                                                    return point
+                                                }
+
+                                                return calcRunwayLatLng(runwayId)
+                                            }),
+                                        }
+                                    }),
+                                })
+                            }}
+                            value={selectedTrack.runwayId}
+                        >
+                            {runwayEnds.map(([id]) => (
+                                <option key={id} value={id}>
+                                    {id}
+                                </option>
+                            ))}
+                        </select>
+                        <h4>Track Designation</h4>
+                        <input
+                            type="text"
+                            value={selectedTrack.name}
+                            onChange={(event) => {
+                                setState({
+                                    ...state,
+                                    tracks: state.tracks.map((track, i) => {
+                                        if (i !== state.selTrackIndex) {
+                                            return track
+                                        }
+
+                                        return {
+                                            ...track,
+                                            name: event.target.value,
+                                        }
+                                    }),
+                                })
+                            }}
+                        />
+                        <h4>Segments</h4>
+                        <ol>
+                            {calcSegments(selectedTrack).map((segment) => (
+                                <li>{segment}</li>
+                            ))}
+                        </ol>
+                    </StyledTrackBox>
+                )}
             </StyledPage>
         </StyledPageContainer>
     )

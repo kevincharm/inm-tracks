@@ -50,11 +50,23 @@ export const MapEventHandler = (props: {
         keydown: (event) => {
             switch (event.originalEvent.code) {
                 case 'Enter': {
+                    if (state.mode !== 'draw') {
+                        return
+                    }
+
+                    // If we're in draw mode, then finalise the track currently being drawn
                     // Drop the last element (temporary preview point)
                     const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
                     setState({
                         ...state,
-                        tracks: state.tracks.concat([currTrack]),
+                        tracks: state.tracks.concat([
+                            {
+                                runwayId: state.currRunway,
+                                name: 'UNTITLED',
+                                points: currTrack,
+                            },
+                        ]),
+                        selTrackIndex: state.tracks.length, // last index after insertion above
                         currTrack: [calcRunwayLatLng(state.currRunway)],
                     })
                     break
@@ -62,6 +74,7 @@ export const MapEventHandler = (props: {
                 case 'Escape': {
                     setState({
                         ...state,
+                        selTrackIndex: -1,
                         currTrack: [calcRunwayLatLng(state.currRunway)],
                     })
                     break
