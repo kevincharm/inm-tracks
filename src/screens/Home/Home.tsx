@@ -5,6 +5,8 @@ import * as dbf from 'dbf'
 import { format } from 'date-fns'
 import { MapConsumer, Marker, TileLayer, Tooltip, Polyline } from 'react-leaflet'
 import {
+    StyledHint,
+    StyledKeyHint,
     StyledMapContainer,
     StyledPage,
     StyledPageContainer,
@@ -395,8 +397,6 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         )
                     })}
                     {state.tracks.map((track, i) => {
-                        const segments = calcSegments(track)
-
                         return (
                             <Polyline
                                 key={i}
@@ -411,7 +411,10 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                     },
                                 }}
                             >
-                                <Tooltip>{segments.join(',')}</Tooltip>
+                                <Tooltip>
+                                    {track.runwayId} {track.name}
+                                </Tooltip>
+                                {/* <Tooltip>{segments.join(',')}</Tooltip> */}
                             </Polyline>
                         )
                     })}
@@ -490,6 +493,29 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     </Toolbar>
                 )}
             </StyledPage>
+            {state.mode === 'init' && (
+                <StyledHint>
+                    You are in <u>select</u> mode
+                    <br />
+                    Click on a track (red line) to edit it
+                    <br />
+                    Click the <StyledKeyHint>Draw</StyledKeyHint> button or press the{' '}
+                    <StyledKeyHint>D</StyledKeyHint> key to enter draw mode
+                </StyledHint>
+            )}
+            {state.mode === 'draw' && (
+                <StyledHint>
+                    You are in <u>draw</u> mode
+                    <br />
+                    <StyledKeyHint>Return ⏎</StyledKeyHint> or{' '}
+                    <StyledKeyHint>double-click 🖱️</StyledKeyHint> to finalise track
+                    <br />
+                    <StyledKeyHint>␛</StyledKeyHint> to cancel drawing track
+                    <br />
+                    Click the <StyledKeyHint>Select</StyledKeyHint> button or press the{' '}
+                    <StyledKeyHint>S</StyledKeyHint> key to go back to select mode
+                </StyledHint>
+            )}
         </StyledPageContainer>
     )
 }

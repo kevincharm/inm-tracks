@@ -46,3 +46,35 @@ export const StyledTrackBox = styled('div')((props) => ({
     padding: props.theme.metrics.margins.md,
     backgroundColor: 'white',
 }))
+
+export const StyledHint = styled('div')((props) => ({
+    backgroundColor: 'transparent',
+    zIndex: 110,
+    position: 'fixed',
+    userSelect: 'none',
+    pointerEvents: 'none',
+    // textAlign: 'center',
+    width: '100%',
+    left: props.theme.metrics.margins.lg,
+    bottom: props.theme.metrics.margins.lg,
+    fontSize: 18,
+    fontWeight: 400,
+    lineHeight: 3,
+    textShadow: `-1px -1px 10px #fff,
+        1px -1px 10px #fff,
+        -1px 1px 10px #fff,
+        1px 1px 10px #fff`,
+}))
+
+export const StyledKeyHint = styled('span')((props) => ({
+    padding: `${props.theme.metrics.margins.sm}px ${props.theme.metrics.margins.md}px`,
+    margin: props.theme.metrics.margins.sm,
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderRadius: 5,
+    borderColor: '#333',
+    backgroundColor: '#333',
+    color: '#ddd',
+    textShadow: 'none',
+    fontStyle: 'italic',
+}))

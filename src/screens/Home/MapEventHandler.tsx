@@ -13,6 +13,22 @@ export const MapEventHandler = (props: {
 }) => {
     const { state, setState } = props
 
+    const finaliseCurrentTrack = () => {
+        const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
+        setState({
+            ...state,
+            tracks: state.tracks.concat([
+                {
+                    runwayId: state.currRunway,
+                    name: 'UNTITLED',
+                    points: currTrack,
+                },
+            ]),
+            selTrackIndex: state.tracks.length, // last index after insertion above
+            currTrack: [calcRunwayLatLng(state.currRunway)],
+        })
+    }
+
     useMapEvents({
         click: (event) => {
             if (state.mode !== 'draw') {
@@ -29,6 +45,13 @@ export const MapEventHandler = (props: {
                     [lat, lng] /** Add another one at the end for where the mouse is */,
                 ]),
             })
+        },
+        dblclick: (event) => {
+            if (state.mode !== 'draw') {
+                return
+            }
+
+            finaliseCurrentTrack()
         },
         mousemove: (event) => {
             const track = state.currTrack
@@ -56,19 +79,7 @@ export const MapEventHandler = (props: {
 
                     // If we're in draw mode, then finalise the track currently being drawn
                     // Drop the last element (temporary preview point)
-                    const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
-                    setState({
-                        ...state,
-                        tracks: state.tracks.concat([
-                            {
-                                runwayId: state.currRunway,
-                                name: 'UNTITLED',
-                                points: currTrack,
-                            },
-                        ]),
-                        selTrackIndex: state.tracks.length, // last index after insertion above
-                        currTrack: [calcRunwayLatLng(state.currRunway)],
-                    })
+                    finaliseCurrentTrack()
                     break
                 }
                 case 'Escape': {
