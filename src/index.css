@@ -8,9 +8,9 @@
 
 html,
 body {
-    font-family: "KaTeX_Main", "Roboto", "San Francisco", "Helvetica Neue",
-        sans-serif;
+    font-family: "Roboto", "San Francisco", "Helvetica Neue", sans-serif;
     font-weight: 300;
+    font-size: 14px;
     min-height: 100vh;
 }
 

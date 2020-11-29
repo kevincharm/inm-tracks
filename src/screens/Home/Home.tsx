@@ -1,116 +1,40 @@
 import * as React from 'react'
 import { useState, useEffect, useCallback } from 'react'
-import { MapConsumer, Marker, TileLayer, useMapEvents, Tooltip, Polyline } from 'react-leaflet'
-import { StyledMapContainer, StyledPage, StyledPageContainer, StyledToolbar } from './Home.styled'
+import { MapConsumer, Marker, TileLayer, Tooltip, Polyline } from 'react-leaflet'
+import {
+    StyledMapContainer,
+    StyledPage,
+    StyledPageContainer,
+    StyledToolbar,
+    StyledTrackBox,
+} from './Home.styled'
+import { Button } from '../../components/Button'
 import * as geolib from 'geolib'
 import waypoints from './waypoints'
-import runwayEnds, { getRunway } from './rwy-end'
+import runwayEnds from './rwy-end'
+import { calcRunwayLatLng } from './calc-runway-lat-lng'
+import { MapEventHandler } from './MapEventHandler'
 
 interface HomeProps {}
 
-interface HomeState {
+export interface HomeState {
     mode: 'init' | 'draw'
-    currRunway: string
     tracks: Array<[number, number][]>
+    selTrackIndex: number
+    currRunway: string
     currTrack: [number, number][]
 }
 
-const HNL_CENTRE: [number, number] = [21.318691, -157.922407] // Elevation: 4.0m
+export const HNL_CENTRE: [number, number] = [21.318691, -157.922407] // Elevation: 4.0m
 
-const createDefaultPoint = (runwayEnd: string): [number, number] => {
-    const [, x, y] = getRunway(runwayEnd)!
-    const { latitude: xLat, longitude: xLon } = geolib.computeDestinationPoint(
-        { lat: HNL_CENTRE[0], lon: HNL_CENTRE[1] },
-        Math.abs(x * 1852),
-        x >= 0 ? 90 : 270
-    )
-    const { latitude, longitude } = geolib.computeDestinationPoint(
-        { lat: xLat, lon: xLon },
-        Math.abs(y * 1852),
-        y >= 0 ? 0 : 180
-    )
-    // console.log(runwayEnd, x, y, ' -> ', latitude, longitude)
-    return [latitude, longitude]
-}
-
-const defaultCurrTrack = createDefaultPoint(runwayEnds[0][0])
-
-/**
- * Map event handlers, uses render props to control leaflet map
- * @param props
- */
-const MapEventHandler = (props: {
-    state: HomeState
-    setState: React.Dispatch<React.SetStateAction<HomeState>>
-}) => {
-    const { state, setState } = props
-
-    useMapEvents({
-        click: (event) => {
-            if (state.mode !== 'draw') {
-                return
-            }
-
-            const { lat, lng } = event.latlng
-            // Drop the last element (temporary preview point)
-            const currTrack = state.currTrack.slice(0, Math.max(1, state.currTrack.length - 1))
-            setState({
-                ...state,
-                currTrack: currTrack.concat([
-                    [lat, lng],
-                    [lat, lng] /** Add another one at the end for where the mouse is */,
-                ]),
-            })
-        },
-        mousemove: (event) => {
-            const track = state.currTrack
-            if (!track.length || state.mode !== 'draw') {
-                return
-            }
-
-            const { lat, lng } = event.latlng
-            setState({
-                ...state,
-                currTrack: state.currTrack.map((point, i, arr) => {
-                    if (i !== arr.length - 1 || i === 0) {
-                        return point
-                    }
-                    return [lat, lng]
-                }),
-            })
-        },
-        keydown: (event) => {
-            switch (event.originalEvent.code) {
-                case 'Enter': {
-                    // Drop the last element (temporary preview point)
-                    const currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
-                    setState({
-                        ...state,
-                        tracks: state.tracks.concat([currTrack]),
-                        currTrack: [createDefaultPoint(state.currRunway)],
-                    })
-                    break
-                }
-                case 'Escape': {
-                    setState({
-                        ...state,
-                        currTrack: [createDefaultPoint(state.currRunway)],
-                    })
-                    break
-                }
-                default:
-            }
-        },
-    })
-
-    return null
-}
+const defaultCurrTrack = calcRunwayLatLng(runwayEnds[0][0])
 
 export const Home: React.FunctionComponent<HomeProps> = (props) => {
     const [state, setState] = useState<HomeState>({
         mode: 'init',
-        currRunway: runwayEnds[0][0],
         tracks: [],
+        selTrackIndex: -1,
+        currRunway: runwayEnds[0][0],
         currTrack: [defaultCurrTrack],
     })
 
@@ -151,7 +75,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         if (currTrack.length < 1) {
             setState({
                 ...state,
-                currTrack: [createDefaultPoint(state.currRunway)],
+                currTrack: [calcRunwayLatLng(state.currRunway)],
             })
             return
         }
@@ -160,7 +84,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
             ...state,
             currTrack: currTrack.map((segment, i) => {
                 if (i === 0) {
-                    return createDefaultPoint(state.currRunway)
+                    return calcRunwayLatLng(state.currRunway)
                 }
                 return segment
             }),
@@ -171,7 +95,8 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         <StyledPageContainer>
             <StyledPage>
                 <StyledToolbar>
-                    <button
+                    <Button
+                        colourscheme="primary"
                         disabled={state.mode === 'init'}
                         onClick={() =>
                             setState({
@@ -181,8 +106,9 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         }
                     >
                         Select (S)
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        colourscheme="primary"
                         disabled={state.mode === 'draw'}
                         onClick={() =>
                             setState({
@@ -192,7 +118,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         }
                     >
                         Draw (D)
-                    </button>
+                    </Button>
                     <select
                         onChange={(event) => {
                             const runwayId = event.target.value
@@ -247,7 +173,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     {runwayEnds.map(([RWY_ID, X_COORD, Y_COORD]) => {
                         const FUDGE_FACTOR = 10 /** MAGNETIC SHIFT? LOLWAT */
                         const bearing = Number(RWY_ID.slice(0, 2)) * 10 + FUDGE_FACTOR
-                        const [lat, lng] = createDefaultPoint(RWY_ID)
+                        const [lat, lng] = calcRunwayLatLng(RWY_ID)
                         const {
                             latitude: endLat,
                             longitude: endLng,
@@ -328,6 +254,14 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         <Polyline positions={state.currTrack} color="blue" />
                     )}
                 </StyledMapContainer>
+                <StyledTrackBox>
+                    <div>Runway</div>
+                    <div>{state.currRunway /** TODO: should show selected runway */}</div>
+                    <label>
+                        <div>Track Designation</div>
+                        <input type="text" />
+                    </label>
+                </StyledTrackBox>
             </StyledPage>
         </StyledPageContainer>
     )
