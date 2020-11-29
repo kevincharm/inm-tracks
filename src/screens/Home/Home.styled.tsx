@@ -22,17 +22,27 @@ export const StyledMapContainer = styled(MapContainer)({
 export const StyledToolbar = styled('div')({
     display: 'flex',
     height: 60,
+})
+
+export const StyledToolbarLeft = styled('div')({
+    display: 'flex',
+    justifyContent: 'flex-start',
+    width: '50%',
+    '> *': {
+        minWidth: 100,
+    },
+})
+
+export const StyledToolbarRight = styled('div')({
+    display: 'flex',
+    justifyContent: 'flex-end',
+    width: '50%',
     '> *': {
         minWidth: 100,
     },
 })
 
 export const StyledTrackBox = styled('div')((props) => ({
-    zIndex: 100,
-    position: 'absolute',
     padding: props.theme.metrics.margins.md,
-    margin: props.theme.metrics.margins.md,
-    top: 100,
-    right: 20,
     backgroundColor: 'white',
 }))

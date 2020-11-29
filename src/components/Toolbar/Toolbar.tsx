@@ -11,6 +11,7 @@ import {
 
 export interface ToolbarProps {
     title?: string
+    id: string
     stackDirection: StackDirection
     defaultX?: number
     defaultY?: number
@@ -25,6 +26,7 @@ export const ToolbarButton: React.FunctionComponent<React.ComponentPropsWithoutR
 }
 
 export const Toolbar: React.FunctionComponent<ToolbarProps> = (props) => {
+    const lsKey = `toolbar__${props.id}`
     const containerRef = React.createRef<HTMLDivElement>()
     const draggableTargetRef = React.createRef<HTMLDivElement>()
     const dragStart = {
@@ -45,6 +47,16 @@ export const Toolbar: React.FunctionComponent<ToolbarProps> = (props) => {
         e.preventDefault()
 
         isDragging = false
+
+        const container = containerRef.current
+        if (!container) {
+            return
+        }
+        const settings = {
+            x: parseInt(container.style.left),
+            y: parseInt(container.style.top),
+        }
+        localStorage.setItem(lsKey, JSON.stringify(settings))
     }
 
     const mouseMoveHandler = (e: MouseEvent) => {
@@ -78,8 +90,23 @@ export const Toolbar: React.FunctionComponent<ToolbarProps> = (props) => {
 
         const container = containerRef.current
         if (container) {
-            container.style.top = `${typeof props.defaultY === 'number' ? props.defaultY : 100}px`
-            container.style.left = `${typeof props.defaultX === 'number' ? props.defaultX : 10}px`
+            try {
+                const settings = JSON.parse(localStorage.getItem(lsKey) || null!)
+                const container = containerRef.current
+                if (!settings || !settings.x || !settings.y || !container) {
+                    return
+                }
+                container.style.top = settings.y + 'px'
+                container.style.left = settings.x + 'px'
+            } catch (err) {
+                // do nothing
+                container.style.top = `${
+                    typeof props.defaultY === 'number' ? props.defaultY : 100
+                }px`
+                container.style.left = `${
+                    typeof props.defaultX === 'number' ? props.defaultX : 10
+                }px`
+            }
         }
 
         return () => {

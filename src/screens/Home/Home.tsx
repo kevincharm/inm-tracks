@@ -1,11 +1,14 @@
 import * as React from 'react'
 import { useState, useEffect, useCallback } from 'react'
+import { format } from 'date-fns'
 import { MapConsumer, Marker, TileLayer, Tooltip, Polyline } from 'react-leaflet'
 import {
     StyledMapContainer,
     StyledPage,
     StyledPageContainer,
     StyledToolbar,
+    StyledToolbarLeft,
+    StyledToolbarRight,
     StyledTrackBox,
 } from './Home.styled'
 import { Button } from '../../components/Button'
@@ -14,6 +17,7 @@ import waypoints from './waypoints'
 import runwayEnds from './rwy-end'
 import { calcRunwayLatLng } from './calc-runway-lat-lng'
 import { MapEventHandler } from './MapEventHandler'
+import { Toolbar } from '../../components/Toolbar'
 
 interface HomeProps {}
 
@@ -159,63 +163,145 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         <StyledPageContainer>
             <StyledPage>
                 <StyledToolbar>
-                    <Button
-                        colourscheme="primary"
-                        disabled={state.mode === 'init'}
-                        onClick={() =>
-                            setState({
-                                ...state,
-                                mode: 'init',
-                            })
-                        }
-                    >
-                        Select (S)
-                    </Button>
-                    <Button
-                        colourscheme="primary"
-                        disabled={state.mode === 'draw'}
-                        onClick={() =>
-                            setState({
-                                ...state,
-                                mode: 'draw',
-                            })
-                        }
-                    >
-                        Draw (D)
-                    </Button>
-                    <select
-                        onChange={(event) => {
-                            const runwayId = event.target.value
-                            setState({
-                                ...state,
-                                currRunway: runwayId,
-                            })
-                        }}
-                    >
-                        {runwayEnds.map(([id]) => (
-                            <option key={id} value={id}>
-                                {id}
-                            </option>
-                        ))}
-                    </select>
-                    <Button
-                        colourscheme="danger"
-                        onClick={() => {
-                            if (
-                                window.confirm(
-                                    'Are you sure you want to delete all locally-stored data?'
-                                )
-                            ) {
-                                localStorage.clear()
+                    <StyledToolbarLeft>
+                        <Button
+                            colourscheme="primary"
+                            disabled={state.mode === 'init'}
+                            onClick={() =>
                                 setState({
                                     ...state,
-                                    tracks: [],
+                                    mode: 'init',
                                 })
                             }
-                        }}
-                    >
-                        Clear Data
-                    </Button>
+                        >
+                            Select (S)
+                        </Button>
+                        <Button
+                            colourscheme="primary"
+                            disabled={state.mode === 'draw'}
+                            onClick={() =>
+                                setState({
+                                    ...state,
+                                    mode: 'draw',
+                                })
+                            }
+                        >
+                            Draw (D)
+                        </Button>
+                        <select
+                            onChange={(event) => {
+                                const runwayId = event.target.value
+                                setState({
+                                    ...state,
+                                    currRunway: runwayId,
+                                })
+                            }}
+                        >
+                            {runwayEnds.map(([id]) => (
+                                <option key={id} value={id}>
+                                    {id}
+                                </option>
+                            ))}
+                        </select>
+                    </StyledToolbarLeft>
+                    <StyledToolbarRight>
+                        <Button
+                            colourscheme="primary"
+                            onClick={() => {
+                                if (!window.confirm(`Importing will overwrite tracks. Continue?`)) {
+                                    return
+                                }
+
+                                /// Whole lotta balony to load a file
+                                // https://stackoverflow.com/questions/3582671/how-to-open-a-local-disk-file-with-javascript
+                                const readFile = function (e: any) {
+                                    var file = e.target.files[0]
+                                    if (!file) {
+                                        return
+                                    }
+                                    var reader = new FileReader()
+                                    reader.onload = function (e: any) {
+                                        var contents = e.target.result
+                                        /// !!! Where the file is actually loaded !!!
+                                        try {
+                                            const tracks = JSON.parse(contents)
+                                            setState({
+                                                ...state,
+                                                tracks,
+                                            })
+                                        } catch (err) {
+                                            window.alert(`Error parsing JSON!`)
+                                        }
+                                        document.body.removeChild(fileInput)
+                                    }
+                                    reader.readAsText(file)
+                                }
+                                const fileInput = document.createElement(
+                                    'input'
+                                ) as HTMLInputElement
+                                fileInput.type = 'file'
+                                fileInput.style.display = 'none'
+                                fileInput.onchange = readFile
+                                document.body.appendChild(fileInput)
+                                var eventMouse = document.createEvent('MouseEvents')
+                                eventMouse.initMouseEvent(
+                                    'click',
+                                    true,
+                                    false,
+                                    window,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    false,
+                                    false,
+                                    false,
+                                    false,
+                                    0,
+                                    null
+                                )
+                                fileInput.dispatchEvent(eventMouse)
+                            }}
+                        >
+                            Import JSON
+                        </Button>
+                        <Button
+                            colourscheme="primary"
+                            onClick={() => {
+                                const blob = new Blob([JSON.stringify(state.tracks)], {
+                                    type: 'application/json',
+                                })
+                                const a = document.createElement('a')
+                                a.href = URL.createObjectURL(blob)
+                                a.download = `inm_tracks_${format(
+                                    new Date(),
+                                    'yyyy-MM-dd-HH-mm-ss'
+                                )}.json`
+                                a.click()
+                            }}
+                        >
+                            Export JSON
+                        </Button>
+                        <Button
+                            colourscheme="danger"
+                            onClick={() => {
+                                if (
+                                    window.confirm(
+                                        'Are you sure you want to delete all locally-stored data?'
+                                    )
+                                ) {
+                                    localStorage.clear()
+                                    setState({
+                                        ...state,
+                                        tracks: [],
+                                    })
+                                }
+                            }}
+                        >
+                            Reset
+                        </Button>
+                    </StyledToolbarRight>
                 </StyledToolbar>
                 <StyledMapContainer center={HNL_CENTRE} zoom={11}>
                     <MapConsumer>
@@ -305,85 +391,91 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     )}
                 </StyledMapContainer>
                 {selectedTrack && (
-                    <StyledTrackBox>
-                        <Button
-                            colourscheme="danger"
-                            onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this track?')) {
+                    <Toolbar id="sel_track" title="Selected Track" stackDirection="vertical">
+                        <StyledTrackBox>
+                            <Button
+                                colourscheme="danger"
+                                onClick={() => {
+                                    if (
+                                        window.confirm(
+                                            'Are you sure you want to delete this track?'
+                                        )
+                                    ) {
+                                        setState({
+                                            ...state,
+                                            tracks: state.tracks.filter(
+                                                (track, i) => i !== state.selTrackIndex
+                                            ),
+                                            selTrackIndex: -1,
+                                        })
+                                    }
+                                }}
+                            >
+                                Delete
+                            </Button>
+                            <h4>Runway</h4>
+                            <select
+                                onChange={(event) => {
+                                    // !! Change the runway ID and lat,lng end for this track !!
+                                    const runwayId = event.target.value
                                     setState({
                                         ...state,
-                                        tracks: state.tracks.filter(
-                                            (track, i) => i !== state.selTrackIndex
-                                        ),
-                                        selTrackIndex: -1,
+                                        tracks: state.tracks.map((track, i) => {
+                                            if (i !== state.selTrackIndex) {
+                                                return track
+                                            }
+
+                                            return {
+                                                ...track,
+                                                runwayId,
+                                                // !! Runway end must be updated !!
+                                                points: track.points.map((point, j) => {
+                                                    if (j !== 0) {
+                                                        return point
+                                                    }
+
+                                                    return calcRunwayLatLng(runwayId)
+                                                }),
+                                            }
+                                        }),
                                     })
-                                }
-                            }}
-                        >
-                            Delete
-                        </Button>
-                        <h4>Runway</h4>
-                        <select
-                            onChange={(event) => {
-                                // !! Change the runway ID and lat,lng end for this track !!
-                                const runwayId = event.target.value
-                                setState({
-                                    ...state,
-                                    tracks: state.tracks.map((track, i) => {
-                                        if (i !== state.selTrackIndex) {
-                                            return track
-                                        }
+                                }}
+                                value={selectedTrack.runwayId}
+                            >
+                                {runwayEnds.map(([id]) => (
+                                    <option key={id} value={id}>
+                                        {id}
+                                    </option>
+                                ))}
+                            </select>
+                            <h4>Track Designation</h4>
+                            <input
+                                type="text"
+                                value={selectedTrack.name}
+                                onChange={(event) => {
+                                    setState({
+                                        ...state,
+                                        tracks: state.tracks.map((track, i) => {
+                                            if (i !== state.selTrackIndex) {
+                                                return track
+                                            }
 
-                                        return {
-                                            ...track,
-                                            runwayId,
-                                            // !! Runway end must be updated !!
-                                            points: track.points.map((point, j) => {
-                                                if (j !== 0) {
-                                                    return point
-                                                }
-
-                                                return calcRunwayLatLng(runwayId)
-                                            }),
-                                        }
-                                    }),
-                                })
-                            }}
-                            value={selectedTrack.runwayId}
-                        >
-                            {runwayEnds.map(([id]) => (
-                                <option key={id} value={id}>
-                                    {id}
-                                </option>
-                            ))}
-                        </select>
-                        <h4>Track Designation</h4>
-                        <input
-                            type="text"
-                            value={selectedTrack.name}
-                            onChange={(event) => {
-                                setState({
-                                    ...state,
-                                    tracks: state.tracks.map((track, i) => {
-                                        if (i !== state.selTrackIndex) {
-                                            return track
-                                        }
-
-                                        return {
-                                            ...track,
-                                            name: event.target.value,
-                                        }
-                                    }),
-                                })
-                            }}
-                        />
-                        <h4>Segments</h4>
-                        <ol>
-                            {calcSegments(selectedTrack).map((segment, i) => (
-                                <li key={i}>{segment}</li>
-                            ))}
-                        </ol>
-                    </StyledTrackBox>
+                                            return {
+                                                ...track,
+                                                name: event.target.value,
+                                            }
+                                        }),
+                                    })
+                                }}
+                            />
+                            <h4>Segments</h4>
+                            <ol>
+                                {calcSegments(selectedTrack).map((segment, i) => (
+                                    <li key={i}>{segment}</li>
+                                ))}
+                            </ol>
+                        </StyledTrackBox>
+                    </Toolbar>
                 )}
             </StyledPage>
         </StyledPageContainer>
