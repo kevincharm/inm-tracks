@@ -146,6 +146,27 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         }
     }, [windowKeyDownHandler])
 
+    useEffect(() => {
+        const currTrack = state.currTrack
+        if (currTrack.length < 1) {
+            setState({
+                ...state,
+                currTrack: [createDefaultPoint(state.currRunway)],
+            })
+            return
+        }
+
+        setState({
+            ...state,
+            currTrack: currTrack.map((segment, i) => {
+                if (i === 0) {
+                    return createDefaultPoint(state.currRunway)
+                }
+                return segment
+            }),
+        })
+    }, [state.currRunway])
+
     return (
         <StyledPageContainer>
             <StyledPage>
@@ -216,9 +237,40 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    {state.currTrack && state.currTrack.length > 0 && (
-                        <Polyline positions={state.currTrack} color="blue" />
+                    {waypoints.map(
+                        ([POINT_ID, POINT_CAT, LATITUDE, LONGITUDE, HEIGHT, DEF_COORD]) => (
+                            <Marker key={POINT_ID} position={[LATITUDE, LONGITUDE]}>
+                                <Tooltip permanent>{POINT_ID}</Tooltip>
+                            </Marker>
+                        )
                     )}
+                    {runwayEnds.map(([RWY_ID, X_COORD, Y_COORD]) => {
+                        const FUDGE_FACTOR = 10 /** MAGNETIC SHIFT? LOLWAT */
+                        const bearing = Number(RWY_ID.slice(0, 2)) * 10 + FUDGE_FACTOR
+                        const [lat, lng] = createDefaultPoint(RWY_ID)
+                        const {
+                            latitude: endLat,
+                            longitude: endLng,
+                        } = geolib.computeDestinationPoint(
+                            { lat, lng },
+                            2500 /** TODO: Import this from ABS? */,
+                            bearing
+                        )
+                        // console.log(lat, lng, ' -> ', endLat, endLng)
+
+                        return (
+                            <Polyline
+                                key={RWY_ID}
+                                positions={[
+                                    [lat, lng],
+                                    [endLat, endLng],
+                                ]}
+                                color="grey"
+                            >
+                                <Tooltip permanent>{RWY_ID}</Tooltip>
+                            </Polyline>
+                        )
+                    })}
                     {state.tracks.map((track, i) => {
                         const bearings = []
                         const distances = []
@@ -272,12 +324,8 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                             </Polyline>
                         )
                     })}
-                    {waypoints.map(
-                        ([POINT_ID, POINT_CAT, LATITUDE, LONGITUDE, HEIGHT, DEF_COORD]) => (
-                            <Marker key={POINT_ID} position={[LATITUDE, LONGITUDE]}>
-                                <Tooltip permanent>{POINT_ID}</Tooltip>
-                            </Marker>
-                        )
+                    {state.currTrack && state.currTrack.length > 0 && (
+                        <Polyline positions={state.currTrack} color="blue" />
                     )}
                 </StyledMapContainer>
             </StyledPage>
