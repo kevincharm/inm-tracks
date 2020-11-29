@@ -111,10 +111,25 @@ export const MapEventHandler = (props: {
                     break
                 }
                 case 'Escape': {
+                    if (state.mode !== 'draw') {
+                        return
+                    }
+
+                    // Delete the last segment unless it's the only segment anyway
+                    if (state.currTrack.length === 0) {
+                        return
+                    }
+                    let currTrack
+                    if (state.currTrack.length <= 1) {
+                        currTrack = [calcRunwayLatLng(state.currRunway)]
+                    } else {
+                        currTrack = state.currTrack.slice(0, state.currTrack.length - 1)
+                    }
+
                     setState({
                         ...state,
                         selTrackIndex: -1,
-                        currTrack: [calcRunwayLatLng(state.currRunway)],
+                        currTrack,
                     })
                     break
                 }

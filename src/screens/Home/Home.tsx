@@ -510,7 +510,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     <StyledKeyHint>Return ⏎</StyledKeyHint> or{' '}
                     <StyledKeyHint>double-click 🖱️</StyledKeyHint> to finalise track
                     <br />
-                    <StyledKeyHint>␛</StyledKeyHint> to cancel drawing track
+                    <StyledKeyHint>␛</StyledKeyHint> to cancel last track segment
                     <br />
                     Click the <StyledKeyHint>Select</StyledKeyHint> button or press the{' '}
                     <StyledKeyHint>S</StyledKeyHint> key to go back to select mode
