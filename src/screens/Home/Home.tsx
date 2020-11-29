@@ -31,6 +31,7 @@ import { calcSegments } from './calc-segments'
 import flyoverIcon from '../../flyover.png'
 // @ts-ignore
 import vortacIcon from '../../vortac.png'
+import { FUDGE_FACTOR } from './fudge-factor'
 
 const flyoverMarkerIcon = new L.Icon({
     iconUrl: flyoverIcon,
@@ -348,7 +349,6 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         )
                     )}
                     {runwayEnds.map(([RWY_ID, X_COORD, Y_COORD]) => {
-                        const FUDGE_FACTOR = 10 /** MAGNETIC SHIFT? LOLWAT */
                         const bearing = Number(RWY_ID.slice(0, 2)) * 10 + FUDGE_FACTOR
                         const [lat, lng] = calcRunwayLatLng(RWY_ID)
                         const {

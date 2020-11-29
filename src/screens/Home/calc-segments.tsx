@@ -1,4 +1,5 @@
 import * as geolib from 'geolib'
+import { FUDGE_FACTOR } from './fudge-factor'
 import { Track } from './Home'
 
 export function calcSegments(track: Track) {
@@ -19,7 +20,8 @@ export function calcSegments(track: Track) {
     // calc bearing diffs
     const turns = []
     for (let i = 0; i < bearings.length; i++) {
-        const alpha = i > 0 ? bearings[i - 1] : Number(track.runwayId.slice(0, 2)) * 10
+        const alpha =
+            i > 0 ? bearings[i - 1] : Number(track.runwayId.slice(0, 2)) * 10 + FUDGE_FACTOR
         const beta = bearings[i]
         if (Math.abs(alpha - beta) < 1) {
             // Negligible turn, probably the first segment

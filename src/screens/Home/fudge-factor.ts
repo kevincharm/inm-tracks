@@ -1,0 +1,1 @@
+export const FUDGE_FACTOR = 10 /** MAGNETIC SHIFT? LOLWAT */
