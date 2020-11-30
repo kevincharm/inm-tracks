@@ -33,6 +33,7 @@ import flyoverIcon from '../../flyover.png'
 import vortacIcon from '../../vortac.png'
 import { hnlMagneticDeclination } from './fudge-factor'
 import { HNL_CENTRE } from './HNL_CENTRE'
+import { A330 } from './A330'
 
 const flyoverMarkerIcon = new L.Icon({
     iconUrl: flyoverIcon,
@@ -398,6 +399,15 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     {state.currTrack && state.currTrack.length > 0 && (
                         <Polyline positions={state.currTrack} color="blue" />
                     )}
+                    <MapConsumer>
+                        {(map) => (
+                            <div>
+                                {state.tracks.map((track, i) => (
+                                    <A330 key={i} map={map} track={track} />
+                                ))}
+                            </div>
+                        )}
+                    </MapConsumer>
                 </StyledMapContainer>
                 {selectedTrack && (
                     <Toolbar id="sel_track" title="Selected Track" stackDirection="vertical">
