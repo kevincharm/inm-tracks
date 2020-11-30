@@ -1,6 +1,6 @@
 import * as geolib from 'geolib'
 import { getRunway } from './rwy-end'
-import { HNL_CENTRE } from './Home'
+import { HNL_CENTRE } from './HNL_CENTRE'
 
 export const calcRunwayLatLng = (runwayEnd: string): [number, number] => {
     const [, x, y] = getRunway(runwayEnd)!

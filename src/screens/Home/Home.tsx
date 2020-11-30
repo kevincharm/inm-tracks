@@ -31,7 +31,8 @@ import { calcSegments } from './calc-segments'
 import flyoverIcon from '../../flyover.png'
 // @ts-ignore
 import vortacIcon from '../../vortac.png'
-import { FUDGE_FACTOR } from './fudge-factor'
+import { hnlMagneticDeclination } from './fudge-factor'
+import { HNL_CENTRE } from './HNL_CENTRE'
 
 const flyoverMarkerIcon = new L.Icon({
     iconUrl: flyoverIcon,
@@ -59,8 +60,6 @@ export interface HomeState {
     currTrack: [number, number][]
     showSummary: boolean
 }
-
-export const HNL_CENTRE: [number, number] = [21.318691, -157.922407] // Elevation: 4.0m
 
 const defaultCurrTrack = calcRunwayLatLng(runwayEnds[0][0])
 
@@ -349,7 +348,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         )
                     )}
                     {runwayEnds.map(([RWY_ID, X_COORD, Y_COORD]) => {
-                        const bearing = Number(RWY_ID.slice(0, 2)) * 10 + FUDGE_FACTOR
+                        const bearing = Number(RWY_ID.slice(0, 2)) * 10 + hnlMagneticDeclination
                         const [lat, lng] = calcRunwayLatLng(RWY_ID)
                         const {
                             latitude: endLat,
@@ -482,12 +481,12 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                     group[track.runwayId].sort()
                                     return group
                                 }, {})
-                            ).map(([runwayId, trackNames]) => (
-                                <div>
+                            ).map(([runwayId, trackNames], i) => (
+                                <div key={i}>
                                     <h4>{runwayId}</h4>
                                     <ul>
-                                        {trackNames.map((name, i) => (
-                                            <li key={i}>{name}</li>
+                                        {trackNames.map((name, j) => (
+                                            <li key={j}>{name}</li>
                                         ))}
                                     </ul>
                                 </div>

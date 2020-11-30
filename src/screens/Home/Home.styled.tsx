@@ -46,7 +46,7 @@ export const StyledTrackBox = styled('div')((props) => ({
     padding: props.theme.metrics.margins.md,
     backgroundColor: 'white',
 
-    '*:first-child': {
+    '*:first-of-type': {
         margin: 0,
     },
 
