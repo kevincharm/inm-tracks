@@ -47,7 +47,11 @@ export const StyledTrackBox = styled('div')((props) => ({
     backgroundColor: 'white',
 
     '*:first-child': {
-        margin: 0,
+        marginTop: 0,
+    },
+
+    '> button': {
+        marginRight: props.theme.metrics.margins.sm,
     },
 
     ul: {

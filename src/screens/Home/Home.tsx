@@ -74,6 +74,21 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         showSummary: JSON.parse(localStorage.getItem('showSummary') || null!) || true,
     })
 
+    // Polyline props are immutable 🤮
+    // const lineRefs = useRef(state.tracks.map(() => React.createRef<L.Polyline>()))
+    // useEffect(() => {
+    //     const line = lineRef.current
+    //     if (!line) {
+    //         return
+    //     }
+
+    //     if (state.selTrackIndex === i) {
+    //         line.setStyle({ color: 'yellow' })
+    //     } else {
+    //         line.setStyle({ color: 'red' })
+    //     }
+    // }, [state.selTrackIndex])
+
     const selectedTrack =
         state.selTrackIndex >= 0 && state.selTrackIndex < state.tracks.length
             ? state.tracks[state.selTrackIndex]
@@ -85,6 +100,18 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                 ...state,
                 tracks: state.tracks.filter((_, i) => i !== state.selTrackIndex),
                 selTrackIndex: -1,
+            })
+        }
+    }
+
+    const cloneSelectedTrack = () => {
+        if (selectedTrack) {
+            // TODO: Use immer for deep immutable clone
+            const clonedTrack = JSON.parse(JSON.stringify(selectedTrack)) as Track
+            setState({
+                ...state,
+                tracks: state.tracks.concat([clonedTrack]),
+                selTrackIndex: state.tracks.length, // track is 1 longer
             })
         }
     }
@@ -375,24 +402,9 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         )
                     })}
                     {state.tracks.map((track, i) => {
-                        // Polyline props are immutable 🤮
-                        const lineRef = useRef<L.Polyline>()
-                        useEffect(() => {
-                            const line = lineRef.current
-                            if (!line) {
-                                return
-                            }
-
-                            if (state.selTrackIndex === i) {
-                                line.setStyle({ color: 'yellow' })
-                            } else {
-                                line.setStyle({ color: 'red' })
-                            }
-                        }, [state.selTrackIndex])
-
                         return (
                             <Polyline
-                                ref={lineRef as any}
+                                // ref={lineRef as any}
                                 key={i}
                                 positions={track.points}
                                 color="red"
@@ -430,6 +442,9 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         <StyledTrackBox>
                             <Button colourscheme="danger" onClick={deleteSelectedTrack}>
                                 Delete (X)
+                            </Button>
+                            <Button colourscheme="primary" onClick={cloneSelectedTrack}>
+                                Clone
                             </Button>
                             <h4>Runway</h4>
                             <select
