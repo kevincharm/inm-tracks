@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 // @ts-ignore
 import * as dbf from 'dbf'
 import { format } from 'date-fns'
@@ -375,13 +375,29 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         )
                     })}
                     {state.tracks.map((track, i) => {
+                        // Polyline props are immutable 🤮
+                        const lineRef = useRef<L.Polyline>()
+                        useEffect(() => {
+                            const line = lineRef.current
+                            if (!line) {
+                                return
+                            }
+
+                            if (state.selTrackIndex === i) {
+                                line.setStyle({ color: 'yellow' })
+                            } else {
+                                line.setStyle({ color: 'red' })
+                            }
+                        }, [state.selTrackIndex])
+
                         return (
                             <Polyline
+                                ref={lineRef as any}
                                 key={i}
                                 positions={track.points}
                                 color="red"
                                 eventHandlers={{
-                                    click: (event) => {
+                                    click: (_) => {
                                         setState({
                                             ...state,
                                             selTrackIndex: i,
