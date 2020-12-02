@@ -82,13 +82,14 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
             if (!lines) {
                 return
             }
-            const line = lines[i].current
+            const line = lines[i] /** WHYYYYYY */ && lines[i].current
             if (!line) {
                 return
             }
 
             if (state.selTrackIndex === i) {
                 line.setStyle({ color: 'yellow' })
+                line.bringToFront()
             } else {
                 line.setStyle({ color: 'red' })
             }
