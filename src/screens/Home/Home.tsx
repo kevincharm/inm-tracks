@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 // @ts-ignore
 import * as dbf from 'dbf'
 import { format } from 'date-fns'
@@ -74,20 +74,26 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         showSummary: JSON.parse(localStorage.getItem('showSummary') || null!) || true,
     })
 
-    // Polyline props are immutable 🤮
-    // const lineRefs = useRef(state.tracks.map(() => React.createRef<L.Polyline>()))
-    // useEffect(() => {
-    //     const line = lineRef.current
-    //     if (!line) {
-    //         return
-    //     }
+    // Polyline props are immutable so we gotta do this side-effect garbage 🤮
+    const lineRefs = useRef(state.tracks.map(() => React.createRef<L.Polyline>()))
+    useLayoutEffect(() => {
+        for (let i = 0; i < state.tracks.length; i++) {
+            const lines = lineRefs.current
+            if (!lines) {
+                return
+            }
+            const line = lines[i].current
+            if (!line) {
+                return
+            }
 
-    //     if (state.selTrackIndex === i) {
-    //         line.setStyle({ color: 'yellow' })
-    //     } else {
-    //         line.setStyle({ color: 'red' })
-    //     }
-    // }, [state.selTrackIndex])
+            if (state.selTrackIndex === i) {
+                line.setStyle({ color: 'yellow' })
+            } else {
+                line.setStyle({ color: 'red' })
+            }
+        }
+    }, [state.tracks, state.selTrackIndex, lineRefs.current])
 
     const selectedTrack =
         state.selTrackIndex >= 0 && state.selTrackIndex < state.tracks.length
@@ -404,7 +410,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     {state.tracks.map((track, i) => {
                         return (
                             <Polyline
-                                // ref={lineRef as any}
+                                ref={lineRefs.current[i] as any}
                                 key={i}
                                 positions={track.points}
                                 color="red"
