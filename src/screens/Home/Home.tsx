@@ -111,18 +111,6 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         }
     }
 
-    const cloneSelectedTrack = () => {
-        if (selectedTrack) {
-            // TODO: Use immer for deep immutable clone
-            const clonedTrack = JSON.parse(JSON.stringify(selectedTrack)) as Track
-            setState({
-                ...state,
-                tracks: state.tracks.concat([clonedTrack]),
-                selTrackIndex: state.tracks.length, // track is 1 longer
-            })
-        }
-    }
-
     // I really hate hooks
     const windowKeyDownHandler = useCallback(
         (event: KeyboardEvent) => {
@@ -449,9 +437,6 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         <StyledTrackBox>
                             <Button colourscheme="danger" onClick={deleteSelectedTrack}>
                                 Delete (X)
-                            </Button>
-                            <Button colourscheme="primary" onClick={cloneSelectedTrack}>
-                                Clone
                             </Button>
                             <h4>Runway</h4>
                             <select
