@@ -19,7 +19,7 @@ export interface A330State {
     i: number
 }
 
-const AERO_SPEED = 30
+const AERO_SPEED = 10
 
 const createDefaultState = (props: A330Props): A330State => {
     const { track } = props
