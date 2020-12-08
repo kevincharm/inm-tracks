@@ -519,7 +519,22 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                     <h4>{runwayId}</h4>
                                     <ul>
                                         {trackNames.map((name, j) => (
-                                            <li key={j}>{name}</li>
+                                            <li
+                                                key={j}
+                                                onClick={() => {
+                                                    const trackIndex = state.tracks.findIndex(
+                                                        (t) =>
+                                                            t.name === name &&
+                                                            t.runwayId === runwayId
+                                                    )
+                                                    setState({
+                                                        ...state,
+                                                        selTrackIndex: trackIndex,
+                                                    })
+                                                }}
+                                            >
+                                                {name}
+                                            </li>
                                         ))}
                                     </ul>
                                 </div>

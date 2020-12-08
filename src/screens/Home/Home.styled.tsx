@@ -57,6 +57,11 @@ export const StyledTrackBox = styled('div')((props) => ({
     ul: {
         paddingLeft: props.theme.metrics.margins.sm,
     },
+
+    li: {
+        cursor: 'pointer',
+        marginBottom: props.theme.metrics.margins.sm,
+    },
 }))
 
 export const StyledHint = styled('div')((props) => ({
