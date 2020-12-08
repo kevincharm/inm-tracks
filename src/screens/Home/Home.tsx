@@ -75,14 +75,14 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
     })
 
     // Polyline props are immutable so we gotta do this side-effect garbage 🤮
-    const lineRefs = useRef(state.tracks.map(() => React.createRef<L.Polyline>()))
+    const lineRefs = useRef([]) as React.MutableRefObject<L.Polyline<any, any>[]>
     useLayoutEffect(() => {
         for (let i = 0; i < state.tracks.length; i++) {
             const lines = lineRefs.current
             if (!lines) {
                 return
             }
-            const line = lines[i] /** WHYYYYYY */ && lines[i].current
+            const line = lines[i]
             if (!line) {
                 return
             }
@@ -94,7 +94,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                 line.setStyle({ color: 'red' })
             }
         }
-    }, [state.tracks, state.selTrackIndex, lineRefs.current])
+    }, [state.tracks, state.selTrackIndex])
 
     const selectedTrack =
         state.selTrackIndex >= 0 && state.selTrackIndex < state.tracks.length
@@ -399,7 +399,9 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     {state.tracks.map((track, i) => {
                         return (
                             <Polyline
-                                ref={lineRefs.current[i] as any}
+                                ref={(el) => {
+                                    lineRefs.current[i] = el as L.Polyline<any, any>
+                                }}
                                 key={i}
                                 positions={track.points}
                                 color="red"
