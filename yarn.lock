@@ -8103,6 +8103,11 @@ geolib@^3.3.1:
   resolved "https://registry.yarnpkg.com/geolib/-/geolib-3.3.1.tgz#f144a53b6a6858e81111ff71d137318389927611"
   integrity sha512-sfahBXFcgELdpumDZV5b3KWiINkZxC5myAkLk067UUcTmTXaiE9SWmxMEHztn/Eus4JX6kesHxaIuZlniYgUtg==
 
+geomag@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/geomag/-/geomag-1.0.0.tgz#8fc311484d2d8973b9a3bb9afb92f765c375548a"
+  integrity sha512-mEblE1vO7HojL7nk2R2s670s1nc/u0jtQaP/8EvZxPZ7XlfkwEJ+TWpjgkNy2402Yj2/VaxaefGQgIzbUzUwHg==
+
 get-caller-file@^2.0.1:
   version "2.0.5"
   resolved "https://registry.yarnpkg.com/get-caller-file/-/get-caller-file-2.0.5.tgz#4f94412a82db32f36e3b0b9741f8a97feb031f7e"
