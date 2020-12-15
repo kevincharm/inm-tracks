@@ -426,6 +426,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                             </Polyline>
                         ) : (
                             <div
+                                key={i}
                                 ref={(el) => {
                                     lineRefs.current[i] = el as any /** eww */
                                 }}
@@ -556,7 +557,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                                                 t.runwayId === runwayId
                                                         )?.isVisible
                                                     }
-                                                    onClick={() => {
+                                                    onChange={() => {
                                                         setState({
                                                             ...state,
                                                             tracks: state.tracks.map((t) => {
@@ -564,7 +565,10 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                                                     t.name === name &&
                                                                     t.runwayId === runwayId
                                                                 ) {
-                                                                    t.isVisible = !t.isVisible
+                                                                    return {
+                                                                        ...t,
+                                                                        isVisible: !t.isVisible,
+                                                                    }
                                                                 }
                                                                 return t
                                                             }),
