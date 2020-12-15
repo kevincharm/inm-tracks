@@ -82,11 +82,11 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         for (let i = 0; i < state.tracks.length; i++) {
             const lines = lineRefs.current
             if (!lines) {
-                return
+                continue
             }
             const line = lines[i]
-            if (!line) {
-                return
+            if (!line || !(line instanceof L.Polyline)) {
+                continue
             }
 
             // Highlight if it's being selected
@@ -402,30 +402,34 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                         )
                     })}
                     {state.tracks.map((track, i) => {
-                        return (
-                            track.isVisible && (
-                                <Polyline
-                                    ref={(el) => {
-                                        lineRefs.current[i] = el as L.Polyline<any, any>
-                                    }}
-                                    key={i}
-                                    positions={track.points}
-                                    color="red"
-                                    eventHandlers={{
-                                        click: (_) => {
-                                            setState({
-                                                ...state,
-                                                selTrackIndex: i,
-                                            })
-                                        },
-                                    }}
-                                >
-                                    <Tooltip>
-                                        {track.runwayId} {track.name}
-                                    </Tooltip>
-                                    {/* <Tooltip>{segments.join(',')}</Tooltip> */}
-                                </Polyline>
-                            )
+                        return track.isVisible ? (
+                            <Polyline
+                                ref={(el) => {
+                                    lineRefs.current[i] = el as L.Polyline<any, any>
+                                }}
+                                key={i}
+                                positions={track.points}
+                                color="red"
+                                eventHandlers={{
+                                    click: (_) => {
+                                        setState({
+                                            ...state,
+                                            selTrackIndex: i,
+                                        })
+                                    },
+                                }}
+                            >
+                                <Tooltip>
+                                    {track.runwayId} {track.name}
+                                </Tooltip>
+                                {/* <Tooltip>{segments.join(',')}</Tooltip> */}
+                            </Polyline>
+                        ) : (
+                            <div
+                                ref={(el) => {
+                                    lineRefs.current[i] = el as any /** eww */
+                                }}
+                            />
                         )
                     })}
                     {state.currTrack && state.currTrack.length > 0 && (
