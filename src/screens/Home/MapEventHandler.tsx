@@ -20,6 +20,7 @@ export const MapEventHandler = (props: {
             runwayId: state.currRunway,
             name: 'UNTITLED',
             points: currTrack,
+            isVisible: true,
         }
 
         // Infer the track name lol

@@ -51,6 +51,8 @@ export interface Track {
     runwayId: string
     name: string
     points: [number, number][]
+    /** UI only */
+    isVisible: boolean
 }
 
 export interface HomeState {
@@ -67,7 +69,7 @@ const defaultCurrTrack = calcRunwayLatLng(runwayEnds[0][0])
 export const Home: React.FunctionComponent<HomeProps> = (props) => {
     const [state, setState] = useState<HomeState>({
         mode: 'init',
-        tracks: JSON.parse(localStorage.getItem('tracks') || null!) || [],
+        tracks: fixTracks(JSON.parse(localStorage.getItem('tracks') || null!) || []),
         selTrackIndex: -1,
         currRunway: runwayEnds[0][0],
         currTrack: [defaultCurrTrack],
@@ -87,6 +89,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                 return
             }
 
+            // Highlight if it's being selected
             if (state.selTrackIndex === i) {
                 line.setStyle({ color: 'yellow' })
                 line.bringToFront()
@@ -283,7 +286,9 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
 
                                 openFile((contents) => {
                                     try {
-                                        const tracks = JSON.parse(contents)
+                                        const tracks: Track[] = JSON.parse(contents)
+                                        // Fix format version inconsistency
+                                        fixTracks(tracks)
                                         setState({
                                             ...state,
                                             tracks,
@@ -398,27 +403,29 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     })}
                     {state.tracks.map((track, i) => {
                         return (
-                            <Polyline
-                                ref={(el) => {
-                                    lineRefs.current[i] = el as L.Polyline<any, any>
-                                }}
-                                key={i}
-                                positions={track.points}
-                                color="red"
-                                eventHandlers={{
-                                    click: (_) => {
-                                        setState({
-                                            ...state,
-                                            selTrackIndex: i,
-                                        })
-                                    },
-                                }}
-                            >
-                                <Tooltip>
-                                    {track.runwayId} {track.name}
-                                </Tooltip>
-                                {/* <Tooltip>{segments.join(',')}</Tooltip> */}
-                            </Polyline>
+                            track.isVisible && (
+                                <Polyline
+                                    ref={(el) => {
+                                        lineRefs.current[i] = el as L.Polyline<any, any>
+                                    }}
+                                    key={i}
+                                    positions={track.points}
+                                    color="red"
+                                    eventHandlers={{
+                                        click: (_) => {
+                                            setState({
+                                                ...state,
+                                                selTrackIndex: i,
+                                            })
+                                        },
+                                    }}
+                                >
+                                    <Tooltip>
+                                        {track.runwayId} {track.name}
+                                    </Tooltip>
+                                    {/* <Tooltip>{segments.join(',')}</Tooltip> */}
+                                </Polyline>
+                            )
                         )
                     })}
                     {state.currTrack && state.currTrack.length > 0 && (
@@ -427,9 +434,10 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     <MapConsumer>
                         {(map) => (
                             <div>
-                                {state.tracks.map((track, i) => (
-                                    <A330 key={i} map={map} track={track} />
-                                ))}
+                                {state.tracks.map(
+                                    (track, i) =>
+                                        track.isVisible && <A330 key={i} map={map} track={track} />
+                                )}
                             </div>
                         )}
                     </MapConsumer>
@@ -535,6 +543,30 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                                     })
                                                 }}
                                             >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={
+                                                        state.tracks.find(
+                                                            (t) =>
+                                                                t.name === name &&
+                                                                t.runwayId === runwayId
+                                                        )?.isVisible
+                                                    }
+                                                    onClick={() => {
+                                                        setState({
+                                                            ...state,
+                                                            tracks: state.tracks.map((t) => {
+                                                                if (
+                                                                    t.name === name &&
+                                                                    t.runwayId === runwayId
+                                                                ) {
+                                                                    t.isVisible = !t.isVisible
+                                                                }
+                                                                return t
+                                                            }),
+                                                        })
+                                                    }}
+                                                />
                                                 {name}
                                             </li>
                                         ))}
@@ -570,4 +602,13 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
             )}
         </StyledPageContainer>
     )
+}
+
+function fixTracks(tracks: Track[]) {
+    for (const track of tracks) {
+        if (typeof track.isVisible === 'undefined') {
+            track.isVisible = true
+        }
+    }
+    return tracks
 }
