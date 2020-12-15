@@ -6,7 +6,6 @@ import { BrowserRouter, HashRouter } from 'react-router-dom'
 // Don't forget to add all these to ../.storybook/preview.js too
 import 'normalize.css'
 import './index.css'
-import 'katex/dist/katex.css'
 
 import { App } from './App'
 
