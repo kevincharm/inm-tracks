@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react
 // @ts-ignore
 import * as dbf from 'dbf'
 import { format } from 'date-fns'
-import { MapConsumer, Marker, TileLayer, Tooltip, Polyline } from 'react-leaflet'
+import { MapConsumer, Marker, TileLayer, Tooltip, Polyline, GeoJSON } from 'react-leaflet'
 import {
     StyledHint,
     StyledKeyHint,
@@ -33,7 +33,7 @@ import flyoverIcon from '../../flyover.png'
 import vortacIcon from '../../vortac.png'
 import { hnlMagneticDeclination } from './fudge-factor'
 import { HNL_CENTRE } from './HNL_CENTRE'
-import { A330 } from './A330'
+// import { A330 } from './A330'
 
 const flyoverMarkerIcon = new L.Icon({
     iconUrl: flyoverIcon,
@@ -55,6 +55,43 @@ export interface Track {
     isVisible: boolean
 }
 
+interface GeoJsonMultiPolygon {
+    type: 'MultiPolygon'
+    coordinates: Array<Array<[number, number]>>
+}
+interface GeoJsonPolygon {
+    type: 'Polygon'
+    coordinates: Array<[number, number]>
+}
+interface InmContourGeoJson {
+    type: 'GeometryCollection'
+    geometries: Array<GeoJsonPolygon | GeoJsonMultiPolygon>
+}
+
+// @ts-ignore
+import inmNoiseContour2018 from '../../assets/inm_dnl_2018.json'
+// @ts-ignore
+import inmNoiseContour2040 from '../../assets/inm_dnl_2040.json'
+// @ts-ignore
+import inmNoiseContour2040Alt from '../../assets/inm_dnl_2040_alt.json'
+const noiseContours = {
+    std2018: inmNoiseContour2018 as InmContourGeoJson,
+    std2040: inmNoiseContour2040 as InmContourGeoJson,
+    alt2040: inmNoiseContour2040Alt as InmContourGeoJson,
+}
+
+const defaultCurrTrack = calcRunwayLatLng(runwayEnds[0][0])
+
+const contourColours = [
+    '#09fdfe' /** 55 dB */,
+    '#0404fc',
+    '#00f706',
+    '#158612',
+    '#dedc02',
+    '#ea300a',
+    '#e100b3',
+]
+
 export interface HomeState {
     mode: 'init' | 'draw'
     tracks: Track[]
@@ -62,9 +99,8 @@ export interface HomeState {
     currRunway: string
     currTrack: [number, number][]
     showSummary: boolean
+    currNoiseContour: keyof typeof noiseContours
 }
-
-const defaultCurrTrack = calcRunwayLatLng(runwayEnds[0][0])
 
 export const Home: React.FunctionComponent<HomeProps> = (props) => {
     const [state, setState] = useState<HomeState>({
@@ -74,6 +110,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
         currRunway: runwayEnds[0][0],
         currTrack: [defaultCurrTrack],
         showSummary: JSON.parse(localStorage.getItem('showSummary') || null!) || true,
+        currNoiseContour: 'std2018',
     })
 
     // Polyline props are immutable so we gotta do this side-effect garbage 🤮
@@ -264,6 +301,21 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                 </option>
                             ))}
                         </select>
+                        <select
+                            onChange={(event) => {
+                                setState({
+                                    ...state,
+                                    currNoiseContour: event.target
+                                        .value as HomeState['currNoiseContour'],
+                                })
+                            }}
+                        >
+                            {Object.entries(noiseContours).map(([key, _]) => (
+                                <option key={key} value={key}>
+                                    {key}
+                                </option>
+                            ))}
+                        </select>
                     </StyledToolbarLeft>
                     <StyledToolbarRight>
                         <Button
@@ -397,7 +449,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                 ]}
                                 color="grey"
                             >
-                                <Tooltip permanent>{RWY_ID}</Tooltip>
+                                {/* <Tooltip permanent>{RWY_ID}</Tooltip> */}
                             </Polyline>
                         )
                     })}
@@ -436,7 +488,7 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                     {state.currTrack && state.currTrack.length > 0 && (
                         <Polyline positions={state.currTrack} color="blue" />
                     )}
-                    <MapConsumer>
+                    {/* <MapConsumer>
                         {(map) => (
                             <div>
                                 {state.tracks.map(
@@ -445,7 +497,18 @@ export const Home: React.FunctionComponent<HomeProps> = (props) => {
                                 )}
                             </div>
                         )}
-                    </MapConsumer>
+                    </MapConsumer> */}
+                    {noiseContours[state.currNoiseContour].geometries.map((geo, index) => {
+                        return (
+                            <GeoJSON
+                                key={`${index}.${Date.now()}`}
+                                data={geo}
+                                style={() => {
+                                    return { color: contourColours[index] }
+                                }}
+                            />
+                        )
+                    })}
                 </StyledMapContainer>
                 {selectedTrack && (
                     <Toolbar id="sel_track" title="Selected Track" stackDirection="vertical">
